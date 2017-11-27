@@ -13,6 +13,7 @@ import Html.Attributes exposing (src)
 import Window
 import Keyboard exposing (..)
 import Tuple exposing (..)
+import Char exposing (..)
 
 
 type Key
@@ -156,7 +157,7 @@ update msg model =
             ( applyKey 1 key model, Cmd.none )
 
         KeyUp key ->
-            ( applyKey 0 key model, Cmd.none )
+            ( model, Cmd.none )
 
         WindowSize size ->
             ( { model | windowSize = size }
@@ -293,14 +294,19 @@ applyPhysics dt nodes node =
         { node | x = node.x + vx * dt, y = node.y + vy * dt }
 
 
-executeCommand : Model -> Model
-executeCommand model =
+executeEdgeCommand : Model -> Model
+executeEdgeCommand model =
+    model
+
+
+executeNormalCommand : Model -> Model
+executeNormalCommand model =
     model
 
 
 buildCommand : Keyboard.KeyCode -> Model -> Model
 buildCommand keyCode model =
-    model
+    { model | currentCommand = model.currentCommand ++ (Char.fromCode keyCode |> toString) }
 
 
 applyKey : Int -> Keyboard.KeyCode -> Model -> Model
@@ -316,7 +322,7 @@ applyKey scale keyCode model =
                         { model | mode = Normal }
 
                     Return ->
-                        executeCommand model
+                        executeEdgeCommand model
 
                     _ ->
                         buildCommand keyCode model
@@ -337,7 +343,7 @@ applyKey scale keyCode model =
                             { model | nodes = List.append model.nodes [ newNode ] }
 
                     Return ->
-                        executeCommand model
+                        executeNormalCommand model
 
                     _ ->
                         buildCommand keyCode model
