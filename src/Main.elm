@@ -16,7 +16,7 @@ import Tuple exposing (..)
 
 
 type Key
-    = LeftArrow
+    = Return
     | Escape
     | Elwr
     | Nlwr
@@ -26,6 +26,9 @@ type Key
 getKey : Keyboard.KeyCode -> Key
 getKey keyCode =
     case keyCode of
+        13 ->
+            Return
+
         27 ->
             Escape
 
@@ -42,7 +45,6 @@ getKey keyCode =
 type Mode
     = Normal
     | Edge
-    | Node
 
 
 
@@ -113,6 +115,7 @@ type alias Model =
     { nodes : List Node
     , edges : List Edge
     , mode : Mode
+    , currentCommand : String
     , windowSize : Window.Size
     }
 
@@ -122,6 +125,7 @@ model =
     { nodes = []
     , edges = []
     , mode = Normal
+    , currentCommand = ""
     , windowSize = { width = 0, height = 0 }
     }
 
@@ -289,23 +293,38 @@ applyPhysics dt nodes node =
         { node | x = node.x + vx * dt, y = node.y + vy * dt }
 
 
+executeCommand : Model -> Model
+executeCommand model =
+    model
+
+
+buildCommand : Keyboard.KeyCode -> Model -> Model
+buildCommand keyCode model =
+    model
+
+
 applyKey : Int -> Keyboard.KeyCode -> Model -> Model
 applyKey scale keyCode model =
-    case model.mode of
-        Node ->
-            model
+    let
+        key =
+            getKey keyCode
+    in
+        case model.mode of
+            Edge ->
+                case key of
+                    Escape ->
+                        { model | mode = Normal }
 
-        Edge ->
-            model
+                    Return ->
+                        executeCommand model
 
-        Normal ->
-            let
-                key =
-                    getKey keyCode
-            in
+                    _ ->
+                        buildCommand keyCode model
+
+            Normal ->
                 case key of
                     Elwr ->
-                        model
+                        { model | mode = Edge }
 
                     Nlwr ->
                         let
@@ -317,8 +336,11 @@ applyKey scale keyCode model =
                         in
                             { model | nodes = List.append model.nodes [ newNode ] }
 
+                    Return ->
+                        executeCommand model
+
                     _ ->
-                        model
+                        buildCommand keyCode model
 
 
 nodeToSvg : Node -> Svg msg
