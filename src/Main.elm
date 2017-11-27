@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import Debug exposing (..)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Task
@@ -11,6 +12,7 @@ import Html exposing (Html, text, div, img)
 import Html.Attributes exposing (src)
 import Window
 import Keyboard exposing (..)
+import Tuple exposing (..)
 
 
 type Key
@@ -70,15 +72,13 @@ type alias Colored a =
 type alias Node =
     Indexed
         (Positioned
-            (Moved
-                (Labeled
-                    (Colored
-                        { width : Int
-                        , height : Int
-                        , roundX : Int
-                        , roundY : Int
-                        }
-                    )
+            (Labeled
+                (Colored
+                    { width : Int
+                    , height : Int
+                    , roundX : Int
+                    , roundY : Int
+                    }
                 )
             )
         )
@@ -89,8 +89,6 @@ initialNode =
     { idx = "unassigned"
     , x = 0
     , y = 0
-    , vx = 0
-    , vy = 0
     , label = "unlabeled"
     , color = "#f00"
     , width = 80
@@ -148,7 +146,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Frame dt ->
-            ( { model | nodes = List.map (\n -> applyPhysics dt n) model.nodes }, Cmd.none )
+            ( { model | nodes = List.map (\n -> applyPhysics dt model.nodes n) model.nodes }, Cmd.none )
 
         KeyDown key ->
             ( applyKey 1 key model, Cmd.none )
@@ -162,9 +160,133 @@ update msg model =
             )
 
 
-applyPhysics : Float -> Node -> Node
-applyPhysics dt node =
-    { node | x = node.x + 0.05 * dt, y = node.y + 0.05 * dt }
+distance : ( Float, Float ) -> ( Float, Float ) -> Float
+distance p1 p2 =
+    let
+        x1 =
+            first p1
+
+        y1 =
+            second p1
+
+        x2 =
+            first p2
+
+        y2 =
+            second p2
+    in
+        sqrt ((x2 - x1) ^ 2 + (y2 - y1) ^ 2)
+
+
+direction : ( Float, Float ) -> ( Float, Float ) -> Float
+direction p1 p2 =
+    let
+        x1 =
+            first p1
+
+        y1 =
+            second p1
+
+        x2 =
+            first p2
+
+        y2 =
+            second p2
+    in
+        atan2 (y2 - y1) (x2 - x1)
+
+
+repulse : Float -> Float -> Float -> ( Float, Float )
+repulse dist dirTowards radius =
+    let
+        --- The closer we get the stronger the force.
+        f =
+            Basics.max ((radius - dist) * 0.005) 0
+
+        dirAway =
+            dirTowards - pi
+
+        x =
+            (cos dirAway) * f
+
+        y =
+            (sin dirAway) * f
+    in
+        ( x, y )
+
+
+getDistanceForces : Node -> List Node -> List ( Float, Float )
+getDistanceForces node nodes =
+    List.map
+        (\n ->
+            let
+                p1 =
+                    ( node.x, node.y )
+
+                p2 =
+                    ( n.x, n.y )
+
+                dist =
+                    distance p1 p2
+
+                dir =
+                    direction p1 p2
+
+                minRadius =
+                    100
+            in
+                --- Don't apply a force to yourself or if you outside the
+                --- affected radius
+                if n.idx == node.idx || dist > minRadius then
+                    ( 0, 0 )
+                else if dist == 0 then
+                    repulse 1 dir minRadius
+                else
+                    repulse dist dir minRadius
+        )
+        nodes
+
+
+sumForces : List ( Float, Float ) -> ( Float, Float )
+sumForces forces =
+    List.foldr
+        (\f1 f2 ->
+            let
+                x1 =
+                    first f1
+
+                y1 =
+                    second f1
+
+                x2 =
+                    first f2
+
+                y2 =
+                    second f2
+            in
+                ( x1 + x2, y1 + y2 )
+        )
+        ( 0, 0 )
+        forces
+
+
+applyPhysics : Float -> List Node -> Node -> Node
+applyPhysics dt nodes node =
+    let
+        distanceForces =
+            getDistanceForces node nodes
+
+        sumForce =
+            log "Result force " (sumForces distanceForces)
+
+        vx =
+            first sumForce
+
+        vy =
+            second sumForce
+    in
+        --- Calculate force to apply based on distance and direction
+        { node | x = node.x + vx * dt, y = node.y + vy * dt }
 
 
 applyKey : Int -> Keyboard.KeyCode -> Model -> Model
@@ -186,7 +308,14 @@ applyKey scale keyCode model =
                         model
 
                     Nlwr ->
-                        { model | nodes = List.append model.nodes [ initialNode ] }
+                        let
+                            len =
+                                List.length model.nodes
+
+                            newNode =
+                                { initialNode | x = toFloat (len * 10), y = toFloat (len * 10), idx = toString (List.length model.nodes) }
+                        in
+                            { model | nodes = List.append model.nodes [ newNode ] }
 
                     _ ->
                         model
