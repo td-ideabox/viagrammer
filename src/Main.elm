@@ -337,8 +337,19 @@ applyKey scale keyCode model =
                             len =
                                 List.length model.nodes
 
+                            newX =
+                                (toFloat model.windowSize.width) / 2
+
+                            newY =
+                                (toFloat model.windowSize.height) / 2
+
+                            --- Need to fix issue where nodes fly off if they have
+                            --- the exact same x,y
+                            offset =
+                                toFloat (len * 10)
+
                             newNode =
-                                { initialNode | x = toFloat (len * 10), y = toFloat (len * 10), idx = toString (List.length model.nodes) }
+                                { initialNode | x = newX + offset, y = newY + offset, idx = toString (List.length model.nodes) }
                         in
                             { model | nodes = List.append model.nodes [ newNode ] }
 
