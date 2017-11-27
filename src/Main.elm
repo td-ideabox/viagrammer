@@ -224,15 +224,18 @@ view : Model -> Html Msg
 view model =
     let
         winWidth =
-            toFloat model.windowSize.width
+            toString model.windowSize.width
 
         winHeight =
-            toFloat model.windowSize.height
+            toString model.windowSize.height
 
         nodesSvg =
             List.map (\n -> nodeToSvg n) model.nodes
+
+        viewBoxAttr =
+            String.join " " [ "0 0", winWidth, winHeight ]
     in
-        svg [ width "120", height "120", viewBox "0 0 120 120" ]
+        svg [ width winWidth, height winHeight, viewBox viewBoxAttr ]
             nodesSvg
 
 
