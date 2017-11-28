@@ -297,12 +297,12 @@ applyPhysics dt nodes node =
 
 executeEdgeCommand : Model -> Model
 executeEdgeCommand model =
-    model
+    { model | currentCommand = "" }
 
 
 executeNormalCommand : Model -> Model
 executeNormalCommand model =
-    model
+    { model | currentCommand = "" }
 
 
 buildCommand : Keyboard.KeyCode -> Model -> Model
@@ -391,6 +391,8 @@ buildIdx numNodes alphabet =
     in
         case a of
             Nothing ->
+                --- TODO: Handle the case where we could not get a letter from
+                --- the alphabet
                 Debug.crash "Could not get char from alphabet while building idx!"
 
             Just val ->
@@ -423,10 +425,16 @@ nodeToSvg node =
 
         idx =
             node.idx
+
+        labelX =
+            toString (node.x + 10)
+
+        labelY =
+            toString (node.y + 15)
     in
         g []
-            [ rect [ x xPos, y yPos, width nWidth, height nHeight, rx roundX, ry roundY ] []
-            , text_ [] [ Svg.text idx ]
+            [ rect [ x xPos, y yPos, width nWidth, height nHeight, rx roundX, ry roundY, fill "transparent", stroke "black" ] []
+            , text_ [ x labelX, y labelY ] [ Svg.text idx ]
             ]
 
 
