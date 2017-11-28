@@ -14,6 +14,7 @@ import Window
 import Keyboard exposing (..)
 import Tuple exposing (..)
 import Char exposing (..)
+import Array exposing (..)
 
 
 type Key
@@ -334,9 +335,6 @@ applyKey scale keyCode model =
 
                     Nlwr ->
                         let
-                            len =
-                                List.length model.nodes
-
                             newX =
                                 (toFloat model.windowSize.width) / 2
 
@@ -348,8 +346,22 @@ applyKey scale keyCode model =
                             offset =
                                 toFloat (len * 10)
 
+                            len =
+                                List.length model.nodes
+
+                            --- Exclude reserved chars such as 'e' and 't'
+                            alphabet =
+                                Array.fromList [ "a", "b", "c", "d", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "u", "v", "w", "x", "y", "z" ]
+
+                            i =
+                                buildIdx len alphabet
+
                             newNode =
-                                { initialNode | x = newX + offset, y = newY + offset, idx = toString (List.length model.nodes) }
+                                { initialNode
+                                    | x = newX + offset
+                                    , y = newY + offset
+                                    , idx = i
+                                }
                         in
                             { model | nodes = List.append model.nodes [ newNode ] }
 
@@ -358,6 +370,34 @@ applyKey scale keyCode model =
 
                     _ ->
                         buildCommand keyCode model
+
+
+buildIdx : Int -> Array String -> String
+buildIdx numNodes alphabet =
+    let
+        alphaLength =
+            Array.length alphabet
+
+        --- Integer division to find quotient (how long the id is going to be if
+        --- there are more nodes than characters in the alphabet)
+        q =
+            numNodes // alphaLength
+
+        i =
+            numNodes % alphaLength
+
+        a =
+            Array.get i alphabet
+    in
+        case a of
+            Nothing ->
+                Debug.crash "Could not get char from alphabet while building idx!"
+
+            Just val ->
+                if q == 0 then
+                    val
+                else
+                    val ++ buildIdx (numNodes - alphaLength) alphabet
 
 
 nodeToSvg : Node -> Svg msg
@@ -380,8 +420,14 @@ nodeToSvg node =
 
         roundY =
             toString node.roundY
+
+        idx =
+            node.idx
     in
-        rect [ x xPos, y yPos, width nWidth, height nHeight, rx roundX, ry roundY ] []
+        g []
+            [ rect [ x xPos, y yPos, width nWidth, height nHeight, rx roundX, ry roundY ] []
+            , text_ [] [ Svg.text idx ]
+            ]
 
 
 
