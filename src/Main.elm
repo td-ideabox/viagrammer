@@ -116,10 +116,21 @@ type alias Edge =
         )
 
 
+initialEdge : Edge
+initialEdge =
+    { idx = "unassigned edge"
+    , color = "#0f0"
+    , label = "unlabeled edge"
+    , src = initialNode
+    , dest = initialNode
+    }
+
+
 type alias Model =
     { nodes : List Node
     , edges : List Edge
     , mode : Mode
+    , errMsg : String
     , currentCommand : String
     , windowSize : Window.Size
     }
@@ -130,6 +141,7 @@ model =
     { nodes = []
     , edges = []
     , mode = Normal
+    , errMsg = ""
     , currentCommand = ""
     , windowSize = { width = 0, height = 0 }
     }
@@ -324,7 +336,61 @@ executeNormalCommand model =
         else if startEdgeLabel then
             { model | currentCommand = "add edge label " ++ edgeToLabel }
         else if List.length pieces == 2 then
-            { model | currentCommand = "edge" }
+            let
+                srcIdx =
+                    case (List.head pieces) of
+                        Just n ->
+                            n
+
+                        Nothing ->
+                            ""
+
+                destIdx =
+                    case (List.drop 1 pieces |> List.head) of
+                        Just n ->
+                            n
+
+                        Nothing ->
+                            ""
+
+                srcNode =
+                    List.filter (\n -> n.idx == srcIdx) model.nodes |> List.head
+
+                destNode =
+                    List.filter (\n -> n.idx == destIdx) model.nodes |> List.head
+            in
+                case srcNode of
+                    Just src ->
+                        case destNode of
+                            Just dest ->
+                                let
+                                    isSameNode =
+                                        src.idx == dest.idx
+
+                                    newIdx =
+                                        model.currentCommand
+
+                                    edgesWithSameIdx =
+                                        List.filter (\e -> e.idx == newIdx) model.edges
+
+                                    edgeAlreadyExists =
+                                        (List.length edgesWithSameIdx) > 0
+
+                                    newEdge =
+                                        { initialEdge | src = src, dest = dest, idx = model.currentCommand }
+                                in
+                                    if (isSameNode) then
+                                        { model | currentCommand = "", errMsg = "Cannot create edge to same node currently" }
+                                    else if (edgeAlreadyExists) then
+                                        { model | currentCommand = "", errMsg = "Edge already exists" }
+                                    else
+                                        { model | currentCommand = "", edges = List.append model.edges [ newEdge ] }
+
+                            Nothing ->
+                                { model | currentCommand = "", errMsg = "destination node doesn't exist" }
+
+                    Nothing ->
+                        { model | currentCommand = "", errMsg = "source node doesn't exist" }
         else
             { model | currentCommand = "" }
 
