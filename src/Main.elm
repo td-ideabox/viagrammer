@@ -167,7 +167,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Frame dt ->
-            ( { model | nodes = List.map (\n -> applyPhysics dt model.nodes n) model.nodes }, Cmd.none )
+            ( { model | nodes = List.map (\n -> applyPhysics dt model.nodes model.edges n) model.nodes }, Cmd.none )
 
         KeyDown key ->
             ( applyKey 1 key model, Cmd.none )
@@ -236,8 +236,23 @@ repulse dist dirTowards radius =
         ( x, y )
 
 
-getDistanceForces : Node -> List Node -> List ( Float, Float )
-getDistanceForces node nodes =
+attract : Float -> Float -> Float -> ( Float, Float )
+attract dist dirTowards radius =
+    let
+        f =
+            Basics.max ((dist - radius) * 0.005) 0
+
+        x =
+            (cos dirTowards) * f
+
+        y =
+            (sin dirTowards) * f
+    in
+        ( x, y )
+
+
+getDistanceForces : Node -> List Node -> List Edge -> List ( Float, Float )
+getDistanceForces node nodes edges =
     List.map
         (\n ->
             let
@@ -266,6 +281,29 @@ getDistanceForces node nodes =
                     repulse dist dir minRadius
         )
         nodes
+        |> List.append
+            (List.map
+                (\e ->
+                    let
+                        p1 =
+                            ( e.src.x, e.src.y )
+
+                        p2 =
+                            ( e.dest.x, e.dest.y )
+
+                        dist =
+                            distance p1 p2
+
+                        dir =
+                            direction p1 p2
+
+                        minRadius =
+                            100
+                    in
+                        attract dist dir minRadius
+                )
+                edges
+            )
 
 
 sumForces : List ( Float, Float ) -> ( Float, Float )
@@ -291,11 +329,11 @@ sumForces forces =
         forces
 
 
-applyPhysics : Float -> List Node -> Node -> Node
-applyPhysics dt nodes node =
+applyPhysics : Float -> List Node -> List Edge -> Node -> Node
+applyPhysics dt nodes edges node =
     let
         distanceForces =
-            getDistanceForces node nodes
+            getDistanceForces node nodes edges
 
         sumForce =
             log "Result force " (sumForces distanceForces)
