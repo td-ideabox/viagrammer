@@ -21,6 +21,7 @@ type Key
     = Return
     | Escape
     | Elwr
+    | Ilwr
     | Nlwr
     | Other
 
@@ -37,6 +38,9 @@ getKey keyCode =
         69 ->
             Elwr
 
+        73 ->
+            Ilwr
+
         78 ->
             Nlwr
 
@@ -46,7 +50,6 @@ getKey keyCode =
 
 type Mode
     = Normal
-    | Edge
 
 
 
@@ -295,25 +298,31 @@ applyPhysics dt nodes node =
         { node | x = node.x + vx * dt, y = node.y + vy * dt }
 
 
-executeEdgeCommand : Model -> Model
-executeEdgeCommand model =
-    { model | currentCommand = "" }
-
-
 executeNormalCommand : Model -> Model
 executeNormalCommand model =
     let
+        --- Are we creating an edge?
         pieces =
             String.split "t" model.currentCommand
 
-        startLabel =
-            String.startsWith "l" model.currentCommand
+        --- Or labeling a node?
+        startNodeLabel =
+            String.startsWith "ln" model.currentCommand
 
         nodeToLabel =
-            String.dropLeft 1 model.currentCommand
+            String.dropLeft 2 model.currentCommand
+
+        --- Or labeling an edge?
+        startEdgeLabel =
+            String.startsWith "le" model.currentCommand
+
+        edgeToLabel =
+            String.dropLeft 2 model.currentCommand
     in
-        if startLabel then
-            { model | currentCommand = "add label " ++ nodeToLabel }
+        if startNodeLabel then
+            { model | currentCommand = "add node label " ++ nodeToLabel }
+        else if startEdgeLabel then
+            { model | currentCommand = "add edge label " ++ edgeToLabel }
         else if List.length pieces == 2 then
             { model | currentCommand = "edge" }
         else
@@ -343,23 +352,9 @@ applyKey scale keyCode model =
             getKey keyCode
     in
         case model.mode of
-            Edge ->
-                case key of
-                    Escape ->
-                        { model | mode = Normal }
-
-                    Return ->
-                        executeEdgeCommand model
-
-                    _ ->
-                        buildCommand keyCode model
-
             Normal ->
                 case key of
-                    Elwr ->
-                        { model | mode = Edge }
-
-                    Nlwr ->
+                    Ilwr ->
                         let
                             newX =
                                 (toFloat model.windowSize.width) / 2
