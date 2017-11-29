@@ -302,12 +302,38 @@ executeEdgeCommand model =
 
 executeNormalCommand : Model -> Model
 executeNormalCommand model =
-    { model | currentCommand = "" }
+    let
+        pieces =
+            String.split "t" model.currentCommand
+
+        startLabel =
+            String.startsWith "l" model.currentCommand
+
+        nodeToLabel =
+            String.dropLeft 1 model.currentCommand
+    in
+        if startLabel then
+            { model | currentCommand = "add label " ++ nodeToLabel }
+        else if List.length pieces == 2 then
+            { model | currentCommand = "edge" }
+        else
+            { model | currentCommand = "" }
 
 
 buildCommand : Keyboard.KeyCode -> Model -> Model
 buildCommand keyCode model =
-    { model | currentCommand = model.currentCommand ++ (Char.fromCode keyCode |> toString) }
+    let
+        --- alphanumeric
+        validChars =
+            [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' ]
+
+        c =
+            Char.fromCode keyCode |> toLower
+    in
+        if List.member c validChars then
+            { model | currentCommand = model.currentCommand ++ (String.fromList [ c ]) }
+        else
+            model
 
 
 applyKey : Int -> Keyboard.KeyCode -> Model -> Model
