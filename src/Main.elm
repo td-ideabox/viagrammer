@@ -525,6 +525,24 @@ nodeToSvg node =
             ]
 
 
+edgeToSvg : Edge -> Svg msg
+edgeToSvg edge =
+    let
+        srcX =
+            toString edge.src.x
+
+        srcY =
+            toString edge.src.y
+
+        destX =
+            toString edge.dest.x
+
+        destY =
+            toString edge.dest.y
+    in
+        g [] [ line [ x1 srcX, y1 srcY, x2 destX, y2 destY, stroke "black" ] [] ]
+
+
 
 ---- VIEW ----
 
@@ -541,11 +559,17 @@ view model =
         nodesSvg =
             List.map (\n -> nodeToSvg n) model.nodes
 
+        edgesSvg =
+            List.map (\e -> edgeToSvg e) model.edges
+
+        elements =
+            List.append nodesSvg edgesSvg
+
         viewBoxAttr =
             String.join " " [ "0 0", winWidth, winHeight ]
     in
         svg [ width winWidth, height winHeight, viewBox viewBoxAttr ]
-            nodesSvg
+            elements
 
 
 
