@@ -15,6 +15,7 @@ import Keyboard exposing (..)
 import Tuple exposing (..)
 import Char exposing (..)
 import Array exposing (..)
+import Dict exposing (..)
 
 
 type Key
@@ -109,8 +110,8 @@ type alias Edge =
     Indexed
         (Colored
             (Labeled
-                { src : Node
-                , dest : Node
+                { src : String
+                , dest : String
                 }
             )
         )
@@ -121,29 +122,31 @@ initialEdge =
     { idx = "unassigned edge"
     , color = "#0f0"
     , label = "unlabeled edge"
-    , src = initialNode
-    , dest = initialNode
+    , src = ""
+    , dest = ""
     }
 
 
 type alias Model =
-    { nodes : List Node
+    { nodes : Dict String Node
     , edges : List Edge
     , mode : Mode
     , errMsg : String
     , currentCommand : String
     , windowSize : Window.Size
+    , rng : ( Int, Int )
     }
 
 
 model : Model
 model =
-    { nodes = []
+    { nodes = Dict.empty
     , edges = []
     , mode = Normal
     , errMsg = ""
     , currentCommand = ""
     , windowSize = { width = 0, height = 0 }
+    , rng = ( 1, 1 ) -- Use fib sequence to generate rng values
     }
 
 
@@ -167,7 +170,33 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Frame dt ->
-            ( { model | nodes = List.map (\n -> applyPhysics dt model.nodes model.edges n) model.nodes }, Cmd.none )
+            let
+                a =
+                    first model.rng
+
+                b =
+                    second model.rng
+
+                a2 =
+                    b
+
+                b2 =
+                    (a + b) % 1000
+
+                nextRng =
+                    ( a2, b2 )
+            in
+                ( { model
+                    | rng = nextRng
+                    , nodes =
+                        Dict.map
+                            (\k v ->
+                                applyPhysics dt model.nodes model.edges v
+                            )
+                            model.nodes
+                  }
+                , Cmd.none
+                )
 
         KeyDown key ->
             ( applyKey 1 key model, Cmd.none )
@@ -251,59 +280,87 @@ attract dist dirTowards radius =
         ( x, y )
 
 
-getDistanceForces : Node -> List Node -> List Edge -> List ( Float, Float )
+
+-- This is probably suuuuuper slow right now, n^2 at least
+
+
+getDistanceForces : Node -> Dict String Node -> List Edge -> List ( Float, Float )
 getDistanceForces node nodes edges =
-    List.map
-        (\n ->
-            let
-                p1 =
-                    ( node.x, node.y )
+    let
+        nodeList =
+            Dict.values nodes
 
-                p2 =
-                    ( n.x, n.y )
+        nodeEdges =
+            List.filter (\e -> e.src == node.idx) edges
+    in
+        List.map
+            (\n ->
+                let
+                    p1 =
+                        ( node.x, node.y )
 
-                dist =
-                    distance p1 p2
+                    p2 =
+                        ( n.x, n.y )
 
-                dir =
-                    direction p1 p2
+                    dist =
+                        distance p1 p2
 
-                minRadius =
-                    100
-            in
-                --- Don't apply a force to yourself or if you outside the
-                --- affected radius
-                if n.idx == node.idx || dist > minRadius then
-                    ( 0, 0 )
-                else if dist == 0 then
-                    repulse 1 dir minRadius
-                else
-                    repulse dist dir minRadius
-        )
-        nodes
-        |> List.append
-            (List.map
-                (\e ->
-                    let
-                        p1 =
-                            ( e.src.x, e.src.y )
+                    dir =
+                        direction p1 p2
 
-                        p2 =
-                            ( e.dest.x, e.dest.y )
-
-                        dist =
-                            distance p1 p2
-
-                        dir =
-                            direction p1 p2
-
-                        minRadius =
-                            100
-                    in
-                        attract dist dir minRadius
-                )
-                edges
+                    minRadius =
+                        100
+                in
+                    --- Don't apply a force to yourself or if you outside the
+                    --- affected radius
+                    if n.idx == node.idx || dist > minRadius then
+                        ( 0, 0 )
+                    else
+                        repulse dist dir minRadius
             )
+            nodeList
+            |> List.append
+                (List.map
+                    (\e ->
+                        let
+                            src =
+                                Dict.get e.src nodes
+
+                            p1 =
+                                case src of
+                                    Just s ->
+                                        ( s.x, s.y )
+
+                                    Nothing ->
+                                        Debug.crash (e.src ++ " is not in the node map!")
+
+                            dest =
+                                Dict.get e.dest nodes
+
+                            p2 =
+                                case dest of
+                                    Just d ->
+                                        ( d.x, d.y )
+
+                                    Nothing ->
+                                        Debug.crash (e.dest ++ " is not in the node map")
+
+                            dist =
+                                distance p1 p2
+
+                            dir =
+                                direction p1 p2
+
+                            minRadius =
+                                100
+                        in
+                            if dist < minRadius then
+                                ( 0, 0 )
+                            else
+                                attract dist dir minRadius
+                    )
+                    nodeEdges
+                )
 
 
 sumForces : List ( Float, Float ) -> ( Float, Float )
@@ -329,7 +386,7 @@ sumForces forces =
         forces
 
 
-applyPhysics : Float -> List Node -> List Edge -> Node -> Node
+applyPhysics : Float -> Dict String Node -> List Edge -> Node -> Node
 applyPhysics dt nodes edges node =
     let
         distanceForces =
@@ -391,11 +448,14 @@ executeNormalCommand model =
                         Nothing ->
                             ""
 
+                nodes =
+                    Dict.values model.nodes
+
                 srcNode =
-                    List.filter (\n -> n.idx == srcIdx) model.nodes |> List.head
+                    List.filter (\n -> n.idx == srcIdx) nodes |> List.head
 
                 destNode =
-                    List.filter (\n -> n.idx == destIdx) model.nodes |> List.head
+                    List.filter (\n -> n.idx == destIdx) nodes |> List.head
             in
                 case srcNode of
                     Just src ->
@@ -415,7 +475,7 @@ executeNormalCommand model =
                                         (List.length edgesWithSameIdx) > 0
 
                                     newEdge =
-                                        { initialEdge | src = src, dest = dest, idx = model.currentCommand }
+                                        { initialEdge | src = src.idx, dest = dest.idx, idx = model.currentCommand }
                                 in
                                     if (isSameNode) then
                                         { model | currentCommand = "", errMsg = "Cannot create edge to same node currently" }
@@ -468,11 +528,17 @@ applyKey scale keyCode model =
 
                             --- Need to fix issue where nodes fly off if they have
                             --- the exact same x,y
-                            offset =
-                                toFloat (len * 10)
+                            maxOffset =
+                                200
+
+                            xRand =
+                                (first model.rng) % maxOffset |> toFloat
+
+                            yRand =
+                                (second model.rng) % maxOffset |> toFloat
 
                             len =
-                                List.length model.nodes
+                                Dict.size model.nodes
 
                             --- Exclude reserved chars such as 'e' and 't'
                             alphabet =
@@ -483,12 +549,12 @@ applyKey scale keyCode model =
 
                             newNode =
                                 { initialNode
-                                    | x = newX + offset
-                                    , y = newY + offset
+                                    | x = newX + xRand
+                                    , y = newY + yRand
                                     , idx = i
                                 }
                         in
-                            { model | nodes = List.append model.nodes [ newNode ] }
+                            { model | nodes = Dict.insert i newNode model.nodes }
 
                     Return ->
                         executeNormalCommand model
@@ -563,20 +629,46 @@ nodeToSvg node =
             ]
 
 
-edgeToSvg : Edge -> Svg msg
-edgeToSvg edge =
+edgeToSvg : Edge -> Dict String Node -> Svg msg
+edgeToSvg edge nodes =
     let
+        src =
+            Dict.get edge.src nodes
+
         srcX =
-            toString edge.src.x
+            case src of
+                Just s ->
+                    toString s.x
+
+                Nothing ->
+                    Debug.crash "Cant render edge svg cause src x node missing from node map"
 
         srcY =
-            toString edge.src.y
+            case src of
+                Just s ->
+                    toString s.y
+
+                Nothing ->
+                    Debug.crash "Cant render src y of edge svg cause node missing from node map"
+
+        dest =
+            Dict.get edge.dest nodes
 
         destX =
-            toString edge.dest.x
+            case dest of
+                Just d ->
+                    toString d.x
+
+                Nothing ->
+                    Debug.crash "Cant render edge cause dest x is missing from node map"
 
         destY =
-            toString edge.dest.y
+            case dest of
+                Just d ->
+                    toString d.y
+
+                Nothing ->
+                    Debug.crash "Cant render edge cause desy y is missing from node map"
     in
         g [] [ line [ x1 srcX, y1 srcY, x2 destX, y2 destY, stroke "black" ] [] ]
 
@@ -595,10 +687,10 @@ view model =
             toString model.windowSize.height
 
         nodesSvg =
-            List.map (\n -> nodeToSvg n) model.nodes
+            Dict.map (\k v -> nodeToSvg v) model.nodes |> Dict.values
 
         edgesSvg =
-            List.map (\e -> edgeToSvg e) model.edges
+            List.map (\e -> edgeToSvg e model.nodes) model.edges
 
         elements =
             List.append nodesSvg edgesSvg
