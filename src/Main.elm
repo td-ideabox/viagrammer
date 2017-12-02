@@ -614,15 +614,28 @@ nodeToSvg node =
         idx =
             node.idx
 
-        labelX =
+        idxX =
             toString (node.x + 10)
 
-        labelY =
+        idxY =
             toString (node.y + 15)
+
+        labelX =
+            toFloat node.width
+                |> (*) 0.25
+                |> (+) node.x
+                |> toString
+
+        labelY =
+            toFloat node.height
+                |> (*) 0.5
+                |> (+) node.y
+                |> toString
     in
         g []
             [ rect [ x xPos, y yPos, width nWidth, height nHeight, rx roundX, ry roundY, fill "transparent", stroke "black" ] []
-            , text_ [ x labelX, y labelY ] [ Svg.text idx ]
+            , text_ [ x idxX, y idxY ] [ Svg.text node.idx ]
+            , text_ [ x labelX, y labelY ] [ Svg.text node.label ]
             ]
 
 
@@ -667,7 +680,16 @@ edgeToSvg edge nodes =
                 Nothing ->
                     Debug.crash "Cant render edge cause desy y is missing from node map"
     in
-        g [] [ line [ x1 srcX, y1 srcY, x2 destX, y2 destY, stroke "black" ] [] ]
+        g []
+            [ line
+                [ x1 srcX
+                , y1 srcY
+                , x2 destX
+                , y2 destY
+                , stroke "black"
+                ]
+                []
+            ]
 
 
 
