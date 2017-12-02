@@ -57,39 +57,17 @@ type Mode
 ---- MODEL ----
 
 
-type alias Indexed a =
-    { a | idx : String }
-
-
-type alias Positioned a =
-    { a | x : Float, y : Float }
-
-
-type alias Moved a =
-    { a | vx : Float, vy : Float }
-
-
-type alias Labeled a =
-    { a | label : String }
-
-
-type alias Colored a =
-    { a | color : String }
-
-
 type alias Node =
-    Indexed
-        (Positioned
-            (Labeled
-                (Colored
-                    { width : Int
-                    , height : Int
-                    , roundX : Int
-                    , roundY : Int
-                    }
-                )
-            )
-        )
+    { idx : String
+    , color : String
+    , x : Float
+    , y : Float
+    , width : Int
+    , height : Int
+    , roundX : Int
+    , roundY : Int
+    , label : String
+    }
 
 
 initialNode : Node
@@ -107,19 +85,17 @@ initialNode =
 
 
 type alias Edge =
-    Indexed
-        (Colored
-            (Labeled
-                { src : String
-                , dest : String
-                }
-            )
-        )
+    { key : String
+    , color : String
+    , label : String
+    , src : String
+    , dest : String
+    }
 
 
 initialEdge : Edge
 initialEdge =
-    { idx = "unassigned edge"
+    { key = "unassigned edge"
     , color = "#0f0"
     , label = "unlabeled edge"
     , src = ""
@@ -130,6 +106,9 @@ initialEdge =
 type alias Model =
     { nodes : Dict String Node
     , edges : List Edge
+    , indexAlphabet : Array String
+    , commandAlphabet : List Char
+    , indexCounter : Int
     , mode : Mode
     , errMsg : String
     , currentCommand : String
@@ -143,6 +122,9 @@ model =
     { nodes = Dict.empty
     , edges = []
     , mode = Normal
+    , indexAlphabet = Array.fromList [ "a", "b", "c", "d", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "u", "v", "w", "x", "y", "z" ]
+    , commandAlphabet = [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' ]
+    , indexCounter = 0
     , errMsg = ""
     , currentCommand = ""
     , windowSize = { width = 0, height = 0 }
@@ -170,33 +152,12 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Frame dt ->
-            let
-                a =
-                    first model.rng
-
-                b =
-                    second model.rng
-
-                a2 =
-                    b
-
-                b2 =
-                    (a + b) % 1000
-
-                nextRng =
-                    ( a2, b2 )
-            in
-                ( { model
-                    | rng = nextRng
-                    , nodes =
-                        Dict.map
-                            (\k v ->
-                                applyPhysics dt model.nodes model.edges v
-                            )
-                            model.nodes
-                  }
-                , Cmd.none
-                )
+            ( { model
+                | rng = calculateNextRng model.rng
+                , nodes = updateNodes dt model.nodes model.edges
+              }
+            , Cmd.none
+            )
 
         KeyDown key ->
             ( applyKey 1 key model, Cmd.none )
@@ -208,6 +169,42 @@ update msg model =
             ( { model | windowSize = size }
             , Cmd.none
             )
+
+
+updateNodes : Float -> Dict String Node -> List Edge -> Dict String Node
+updateNodes dt nodes edges =
+    Dict.map
+        (\k v ->
+            applyPhysics dt nodes edges v
+        )
+        nodes
+
+
+
+--- Use the fibonnacci sequence as a random number
+--- generator
+
+
+calculateNextRng : ( Int, Int ) -> ( Int, Int )
+calculateNextRng rng =
+    let
+        a =
+            first rng
+
+        b =
+            second rng
+
+        a2 =
+            b
+
+        b2 =
+            (a + b) % 1000
+    in
+        ( a2, b2 )
+
+
+
+--- Physics calculating functions
 
 
 distance : ( Float, Float ) -> ( Float, Float ) -> Float
@@ -284,8 +281,8 @@ attract dist dirTowards radius =
 -- This is probably suuuuuper slow right now, n^2 at least
 
 
-getDistanceForces : Node -> Dict String Node -> List Edge -> List ( Float, Float )
-getDistanceForces node nodes edges =
+calcForcesOnNode : Node -> Dict String Node -> List Edge -> List ( Float, Float )
+calcForcesOnNode node nodes edges =
     let
         nodeList =
             Dict.values nodes
@@ -389,20 +386,24 @@ sumForces forces =
 applyPhysics : Float -> Dict String Node -> List Edge -> Node -> Node
 applyPhysics dt nodes edges node =
     let
-        distanceForces =
-            getDistanceForces node nodes edges
+        forcesOnNode =
+            calcForcesOnNode node nodes edges
 
-        sumForce =
-            log "Result force " (sumForces distanceForces)
+        finalForce =
+            sumForces forcesOnNode
 
         vx =
-            first sumForce
+            first finalForce
 
         vy =
-            second sumForce
+            second finalForce
     in
         --- Calculate force to apply based on distance and direction
         { node | x = node.x + vx * dt, y = node.y + vy * dt }
+
+
+
+--- Vim-esque command processeing
 
 
 executeNormalCommand : Model -> Model
@@ -465,17 +466,14 @@ executeNormalCommand model =
                                     isSameNode =
                                         src.idx == dest.idx
 
-                                    newIdx =
+                                    key =
                                         model.currentCommand
 
-                                    edgesWithSameIdx =
-                                        List.filter (\e -> e.idx == newIdx) model.edges
-
                                     edgeAlreadyExists =
-                                        (List.length edgesWithSameIdx) > 0
+                                        (List.filter (\e -> e.key == key) model.edges |> List.length) > 0
 
                                     newEdge =
-                                        { initialEdge | src = src.idx, dest = dest.idx, idx = model.currentCommand }
+                                        { initialEdge | src = src.idx, dest = dest.idx, key = model.currentCommand }
                                 in
                                     if (isSameNode) then
                                         { model | currentCommand = "", errMsg = "Cannot create edge to same node currently" }
@@ -496,14 +494,10 @@ executeNormalCommand model =
 buildCommand : Keyboard.KeyCode -> Model -> Model
 buildCommand keyCode model =
     let
-        --- alphanumeric
-        validChars =
-            [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' ]
-
         c =
             Char.fromCode keyCode |> toLower
     in
-        if List.member c validChars then
+        if List.member c model.commandAlphabet then
             { model | currentCommand = model.currentCommand ++ (String.fromList [ c ]) }
         else
             model
@@ -519,48 +513,51 @@ applyKey scale keyCode model =
             Normal ->
                 case key of
                     Ilwr ->
-                        let
-                            newX =
-                                (toFloat model.windowSize.width) / 2
-
-                            newY =
-                                (toFloat model.windowSize.height) / 2
-
-                            --- Need to fix issue where nodes fly off if they have
-                            --- the exact same x,y
-                            maxOffset =
-                                200
-
-                            xRand =
-                                (first model.rng) % maxOffset |> toFloat
-
-                            yRand =
-                                (second model.rng) % maxOffset |> toFloat
-
-                            len =
-                                Dict.size model.nodes
-
-                            --- Exclude reserved chars such as 'e' and 't'
-                            alphabet =
-                                Array.fromList [ "a", "b", "c", "d", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "u", "v", "w", "x", "y", "z" ]
-
-                            i =
-                                buildIdx len alphabet
-
-                            newNode =
-                                { initialNode
-                                    | x = newX + xRand
-                                    , y = newY + yRand
-                                    , idx = i
-                                }
-                        in
-                            { model | nodes = Dict.insert i newNode model.nodes }
+                        insertNode model
 
                     Return ->
                         executeNormalCommand model
 
                     _ ->
                         buildCommand keyCode model
+
+
+incrementIdx : Model -> Model
+incrementIdx model =
+    { model | indexCounter = model.indexCounter + 1 }
+
+
+insertNode : Model -> Model
+insertNode model =
+    let
+        newX =
+            (toFloat model.windowSize.width) / 2
+
+        newY =
+            (toFloat model.windowSize.height) / 2
+
+        --- Need to fix issue where nodes fly off if they have
+        --- the exact same x,y
+        maxOffset =
+            200
+
+        xRand =
+            (first model.rng) % maxOffset |> toFloat
+
+        yRand =
+            (second model.rng) % maxOffset |> toFloat
+
+        i =
+            buildIdx model.indexCounter model.indexAlphabet
+
+        newNode =
+            { initialNode
+                | x = newX + xRand
+                , y = newY + yRand
+                , idx = i
+            }
+    in
+        incrementIdx { model | nodes = Dict.insert i newNode model.nodes }
 
 
 buildIdx : Int -> Array String -> String
