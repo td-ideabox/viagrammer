@@ -62,6 +62,7 @@ type alias Node =
     , color : String
     , x : Float
     , y : Float
+    , ignoreForces : Bool
     , width : Int
     , height : Int
     , roundX : Int
@@ -75,6 +76,7 @@ initialNode =
     { idx = "unassigned"
     , x = 0
     , y = 0
+    , ignoreForces = False
     , label = "unlabeled"
     , color = "#f00"
     , width = 80
@@ -310,7 +312,7 @@ calcForcesOnNode node nodes edges =
                 in
                     --- Don't apply a force to yourself or if you outside the
                     --- affected radius
-                    if n.idx == node.idx || dist > minRadius then
+                    if n.idx == node.idx || dist > minRadius || node.ignoreForces then
                         ( 0, 0 )
                     else
                         repulse dist dir minRadius
@@ -351,7 +353,7 @@ calcForcesOnNode node nodes edges =
                             minRadius =
                                 100
                         in
-                            if dist < minRadius then
+                            if dist < minRadius || node.ignoreForces then
                                 ( 0, 0 )
                             else
                                 attract dist dir minRadius
