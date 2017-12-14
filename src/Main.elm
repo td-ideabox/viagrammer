@@ -57,6 +57,29 @@ type Mode
 ---- MODEL ----
 
 
+type alias Coord =
+    Float
+
+
+type alias ViewBox =
+    { x : Float
+    , y : Float
+    , zoom : Float
+    , focusX : Float
+    , focusY : Float
+    }
+
+
+initialViewBox : ViewBox
+initialViewBox =
+    { x = 0
+    , y = 0
+    , zoom = 1
+    , focusX = 0
+    , focusY = 0
+    }
+
+
 type alias Node =
     { idx : String
     , color : String
@@ -115,6 +138,7 @@ type alias Model =
     , errMsg : String
     , currentCommand : String
     , windowSize : Window.Size
+    , viewBox : ViewBox
     , rng : ( Int, Int )
     }
 
@@ -130,6 +154,7 @@ model =
     , errMsg = ""
     , currentCommand = ""
     , windowSize = { width = 0, height = 0 }
+    , viewBox = initialViewBox
     , rng = ( 1, 1 ) -- Use fib sequence to generate rng values
     }
 
@@ -157,6 +182,7 @@ update msg model =
             ( { model
                 | rng = calculateNextRng model.rng
                 , nodes = updateNodes dt model.nodes model.edges
+                , viewBox = moveViewBox model.viewBox dt
               }
             , Cmd.none
             )
@@ -171,6 +197,42 @@ update msg model =
             ( { model | windowSize = size }
             , Cmd.none
             )
+
+
+moveViewBox : ViewBox -> Float -> ViewBox
+moveViewBox currentViewBox dt =
+    let
+        curPos =
+            ( currentViewBox.x, currentViewBox.y )
+
+        focusPos =
+            ( currentViewBox.focusX, currentViewBox.focusY )
+
+        dist =
+            distance curPos focusPos
+
+        dir =
+            direction curPos focusPos
+
+        moveIfFartherThan =
+            30.0
+
+        speed =
+            0.05
+
+        newPos =
+            moveTowards curPos (Debug.log ("Directoin " ++ (toString dir)) dir) speed dt
+
+        newX =
+            first newPos
+
+        newY =
+            second newPos
+    in
+        if dist > moveIfFartherThan then
+            { currentViewBox | x = (Debug.log ("This is the new " ++ (toString newX)) newX), y = newY }
+        else
+            currentViewBox
 
 
 updateNodes : Float -> Dict String Node -> List Edge -> Dict String Node
@@ -260,6 +322,21 @@ repulse dist dirTowards radius =
 
         y =
             (sin dirAway) * f
+    in
+        ( x, y )
+
+
+moveTowards : ( Float, Float ) -> Float -> Float -> Float -> ( Float, Float )
+moveTowards pos dirTowards speed dt =
+    let
+        step =
+            speed * dt
+
+        x =
+            (first pos) + (cos dirTowards) * step
+
+        y =
+            (second pos) + (sin dirTowards) * step
     in
         ( x, y )
 
@@ -532,12 +609,6 @@ incrementIdx model =
 insertNode : Model -> Model
 insertNode model =
     let
-        newX =
-            (toFloat model.windowSize.width) / 2
-
-        newY =
-            (toFloat model.windowSize.height) / 2
-
         --- Need to fix issue where nodes fly off if they have
         --- the exact same x,y
         maxOffset =
@@ -552,14 +623,41 @@ insertNode model =
         i =
             buildIdx model.indexCounter model.indexAlphabet
 
+        newX =
+            (toFloat (model.windowSize.width) + xRand) / 2
+
+        newY =
+            (toFloat (model.windowSize.height) + yRand) / 2
+
         newNode =
             { initialNode
-                | x = newX + xRand
-                , y = newY + yRand
+                | x = newX
+                , y = newY
                 , idx = i
             }
+
+        winWidth =
+            toFloat model.windowSize.width
+
+        winHeight =
+            toFloat model.windowSize.height
+
+        viewBoxFocus =
+            getPointToFocusViewBox ( newX, newY ) winWidth winHeight
+
+        newFocusX =
+            first viewBoxFocus
+
+        newFocusY =
+            second viewBoxFocus
+
+        viewBox =
+            model.viewBox
+
+        newViewBox =
+            { viewBox | focusX = newFocusX, focusY = newFocusY }
     in
-        incrementIdx { model | nodes = Dict.insert i newNode model.nodes }
+        incrementIdx { model | nodes = Dict.insert i newNode model.nodes, viewBox = newViewBox }
 
 
 buildIdx : Int -> Array String -> String
@@ -590,6 +688,24 @@ buildIdx numNodes alphabet =
                     val
                 else
                     val ++ buildIdx (numNodes - alphaLength) alphabet
+
+
+getPointToFocusViewBox : ( Float, Float ) -> Float -> Float -> ( Float, Float )
+getPointToFocusViewBox coordPoint width height =
+    let
+        x =
+            first coordPoint
+
+        y =
+            second coordPoint
+
+        viewX =
+            x - (width * 0.5)
+
+        viewY =
+            y - (height * 0.5)
+    in
+        ( viewX, viewY )
 
 
 nodeToSvg : Node -> Svg msg
@@ -702,10 +818,19 @@ view : Model -> Html Msg
 view model =
     let
         winWidth =
-            toString model.windowSize.width
+            toFloat model.windowSize.width
 
         winHeight =
-            toString model.windowSize.height
+            toFloat model.windowSize.height
+
+        zoom =
+            model.viewBox.zoom
+
+        viewWidth =
+            winWidth * zoom |> toString
+
+        viewHeight =
+            winHeight * zoom |> toString
 
         nodesSvg =
             Dict.map (\k v -> nodeToSvg v) model.nodes |> Dict.values
@@ -716,10 +841,16 @@ view model =
         elements =
             List.append nodesSvg edgesSvg
 
+        viewX =
+            model.viewBox.x |> toString
+
+        viewY =
+            model.viewBox.y |> toString
+
         viewBoxAttr =
-            String.join " " [ "0 0", winWidth, winHeight ]
+            String.join " " [ viewX, viewY, viewWidth, viewHeight ]
     in
-        svg [ width winWidth, height winHeight, viewBox viewBoxAttr ]
+        svg [ width viewWidth, height viewHeight, viewBox viewBoxAttr ]
             elements
 
 
