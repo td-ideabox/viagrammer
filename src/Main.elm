@@ -1,21 +1,20 @@
 module Main exposing (..)
 
-import Debug exposing (..)
-import Svg exposing (..)
-import Svg.Attributes exposing (..)
-import Task
-import Color exposing (..)
-import Time exposing (Time)
 import AnimationFrame exposing (..)
-import Window
-import Html exposing (Html, text, div, img)
-import Html.Attributes exposing (src)
-import Window
-import Keyboard exposing (..)
-import Tuple exposing (..)
-import Char exposing (..)
 import Array exposing (..)
+import Char exposing (..)
+import Debug exposing (..)
 import Dict exposing (..)
+import Keyboard exposing (..)
+import Task
+import Time exposing (Time)
+import Tuple exposing (..)
+import Window
+import Window
+import Css exposing (absolute, px, em, position, left, bold)
+import Html.Styled as Html exposing (..)
+import Svg.Styled as Svg exposing (g, line, rect, svg, text_)
+import Svg.Styled.Attributes as SvgAttr exposing (width, height, viewBox, x, y, x1, y1, x2, y2, stroke, rx, ry, fill)
 
 
 type Key
@@ -94,13 +93,18 @@ type alias Node =
     }
 
 
+
+-- We're initializing data with valid but incorrect data. Is
+-- there a better pattern?
+
+
 initialNode : Node
 initialNode =
     { idx = "unassigned"
     , x = 0
     , y = 0
     , ignoreForces = False
-    , label = "unlabeled"
+    , label = ""
     , color = "#f00"
     , width = 80
     , height = 80
@@ -122,7 +126,7 @@ initialEdge : Edge
 initialEdge =
     { key = "unassigned edge"
     , color = "#0f0"
-    , label = "unlabeled edge"
+    , label = ""
     , src = ""
     , dest = ""
     }
@@ -148,7 +152,7 @@ model =
     { nodes = Dict.empty
     , edges = []
     , mode = Normal
-    , indexAlphabet = Array.fromList [ "a", "b", "c", "d", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "u", "v", "w", "x", "y", "z" ]
+    , indexAlphabet = Array.fromList [ "a", "b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "u", "v", "w", "x", "y", "z" ]
     , commandAlphabet = [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' ]
     , indexCounter = 0
     , errMsg = ""
@@ -221,7 +225,7 @@ moveViewBox currentViewBox dt =
             0.05
 
         newPos =
-            moveTowards curPos (Debug.log ("Directoin " ++ (toString dir)) dir) speed dt
+            moveTowards curPos (Debug.log ("Direction " ++ (toString dir)) dir) speed dt
 
         newX =
             first newPos
@@ -507,7 +511,16 @@ executeNormalCommand model =
             String.dropLeft 2 model.currentCommand
     in
         if startNodeLabel then
-            { model | currentCommand = "add node label " ++ nodeToLabel }
+            let
+                targetNode =
+                    Dict.get nodeToLabel model.nodes
+            in
+                case targetNode of
+                    Just n ->
+                        { model | viewBox = setViewBoxFocus ( n.x, n.y ) model.viewBox }
+
+                    Nothing ->
+                        Debug.crash "Couldn't find node when labeling"
         else if startEdgeLabel then
             { model | currentCommand = "add edge label " ++ edgeToLabel }
         else if List.length pieces == 2 then
@@ -532,10 +545,10 @@ executeNormalCommand model =
                     Dict.values model.nodes
 
                 srcNode =
-                    List.filter (\n -> n.idx == srcIdx) nodes |> List.head
+                    findNodeByIdx nodes srcIdx
 
                 destNode =
-                    List.filter (\n -> n.idx == destIdx) nodes |> List.head
+                    findNodeByIdx nodes destIdx
             in
                 case srcNode of
                     Just src ->
@@ -660,6 +673,11 @@ insertNode model =
         incrementIdx { model | nodes = Dict.insert i newNode model.nodes, viewBox = newViewBox }
 
 
+findNodeByIdx : List Node -> String -> Maybe Node
+findNodeByIdx nodes idx =
+    List.filter (\n -> n.idx == idx) nodes |> List.head
+
+
 buildIdx : Int -> Array String -> String
 buildIdx numNodes alphabet =
     let
@@ -690,6 +708,11 @@ buildIdx numNodes alphabet =
                     val ++ buildIdx (numNodes - alphaLength) alphabet
 
 
+setViewBoxFocus : ( Float, Float ) -> ViewBox -> ViewBox
+setViewBoxFocus pos viewBox =
+    { viewBox | focusX = first pos, focusY = second pos }
+
+
 getPointToFocusViewBox : ( Float, Float ) -> Float -> Float -> ( Float, Float )
 getPointToFocusViewBox coordPoint width height =
     let
@@ -708,7 +731,7 @@ getPointToFocusViewBox coordPoint width height =
         ( viewX, viewY )
 
 
-nodeToSvg : Node -> Svg msg
+nodeToSvg : Node -> Svg.Svg msg
 nodeToSvg node =
     let
         xPos =
@@ -751,13 +774,23 @@ nodeToSvg node =
                 |> toString
     in
         g []
-            [ rect [ x xPos, y yPos, width nWidth, height nHeight, rx roundX, ry roundY, fill "transparent", stroke "black" ] []
-            , text_ [ x idxX, y idxY ] [ Svg.text node.idx ]
-            , text_ [ x labelX, y labelY ] [ Svg.text node.label ]
+            [ Svg.rect
+                [ SvgAttr.x xPos
+                , SvgAttr.y yPos
+                , SvgAttr.width nWidth
+                , SvgAttr.height nHeight
+                , SvgAttr.rx roundX
+                , SvgAttr.ry roundY
+                , SvgAttr.fill "transparent"
+                , SvgAttr.stroke "black"
+                ]
+                []
+            , Svg.text_ [ SvgAttr.x idxX, SvgAttr.y idxY ] [ Svg.text node.idx ]
+            , Svg.text_ [ SvgAttr.x labelX, SvgAttr.y labelY ] [ Svg.text node.label ]
             ]
 
 
-edgeToSvg : Edge -> Dict String Node -> Svg msg
+edgeToSvg : Edge -> Dict String Node -> Svg.Svg msg
 edgeToSvg edge nodes =
     let
         src =
@@ -798,13 +831,13 @@ edgeToSvg edge nodes =
                 Nothing ->
                     Debug.crash "Cant render edge cause desy y is missing from node map"
     in
-        g []
-            [ line
-                [ x1 srcX
-                , y1 srcY
-                , x2 destX
-                , y2 destY
-                , stroke "black"
+        Svg.g []
+            [ Svg.line
+                [ SvgAttr.x1 srcX
+                , SvgAttr.y1 srcY
+                , SvgAttr.x2 destX
+                , SvgAttr.y2 destY
+                , SvgAttr.stroke "black"
                 ]
                 []
             ]
@@ -812,6 +845,22 @@ edgeToSvg edge nodes =
 
 
 ---- VIEW ----
+
+
+debugCommand : List (Html.Attribute msg) -> List (Html msg) -> Html msg
+debugCommand =
+    Html.styled div [ position absolute, Css.left (Css.pct 50), Css.fontWeight Css.bold ]
+
+
+debugFocus : List (Html.Attribute msg) -> List (Html msg) -> Html msg
+debugFocus =
+    Html.styled div
+        [ position absolute
+        , Css.left (Css.pct 50)
+        , Css.top (Css.pct 50)
+        , Css.color (Css.rgb 255 0 0)
+        , Css.fontWeight Css.bold
+        ]
 
 
 view : Model -> Html Msg
@@ -850,8 +899,12 @@ view model =
         viewBoxAttr =
             String.join " " [ viewX, viewY, viewWidth, viewHeight ]
     in
-        svg [ width viewWidth, height viewHeight, viewBox viewBoxAttr ]
-            elements
+        div []
+            [ debugCommand [] [ Html.text model.currentCommand ]
+            , debugFocus [] [ Html.text "X" ]
+            , Svg.svg [ SvgAttr.width viewWidth, SvgAttr.height viewHeight, SvgAttr.viewBox viewBoxAttr ]
+                elements
+            ]
 
 
 
