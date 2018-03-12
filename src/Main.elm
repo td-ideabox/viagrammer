@@ -6,6 +6,7 @@ import Char exposing (..)
 import Debug exposing (..)
 import Dict exposing (..)
 import Keyboard exposing (..)
+import String exposing (toInt)
 import Task
 import Time exposing (Time)
 import Tuple exposing (..)
@@ -761,6 +762,15 @@ nodeToSvg node =
         idxY =
             toString (node.y + 15)
 
+        debugCoordX =
+            toString (node.x + 10)
+
+        debugCoordY =
+            toString (node.y + 60)
+
+        debugCoord =
+            toString (round node.x) ++ ", " ++ toString (round node.y)
+
         labelX =
             toFloat node.width
                 |> (*) 0.25
@@ -786,6 +796,7 @@ nodeToSvg node =
                 ]
                 []
             , Svg.text_ [ SvgAttr.x idxX, SvgAttr.y idxY ] [ Svg.text node.idx ]
+            , Svg.text_ [ SvgAttr.x debugCoordX, SvgAttr.y debugCoordY ] [ Svg.text debugCoord ]
             , Svg.text_ [ SvgAttr.x labelX, SvgAttr.y labelY ] [ Svg.text node.label ]
             ]
 
