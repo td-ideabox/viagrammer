@@ -220,7 +220,7 @@ moveViewBox currentViewBox dt =
             direction curPos focusPos
 
         moveIfFartherThan =
-            30.0
+            1.0
 
         speed =
             0.05
