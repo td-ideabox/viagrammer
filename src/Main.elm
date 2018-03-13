@@ -518,7 +518,18 @@ executeNormalCommand model =
             in
                 case targetNode of
                     Just n ->
-                        { model | viewBox = setViewBoxFocus ( n.x, n.y ) model.viewBox }
+                        let
+                            winWidth =
+                                toFloat model.windowSize.width
+
+                            winHeight =
+                                toFloat model.windowSize.height
+
+                            focusedViewBox =
+                                getPointToFocusViewBox ( n.x, n.y ) winWidth winHeight
+                                    |> setViewBoxFocus model.viewBox
+                        in
+                            { model | viewBox = focusedViewBox }
 
                     Nothing ->
                         Debug.crash "Couldn't find node when labeling"
@@ -649,29 +660,8 @@ insertNode model =
                 , y = newY
                 , idx = i
             }
-
-        winWidth =
-            toFloat model.windowSize.width
-
-        winHeight =
-            toFloat model.windowSize.height
-
-        viewBoxFocus =
-            getPointToFocusViewBox ( newX, newY ) winWidth winHeight
-
-        newFocusX =
-            first viewBoxFocus
-
-        newFocusY =
-            second viewBoxFocus
-
-        viewBox =
-            model.viewBox
-
-        newViewBox =
-            { viewBox | focusX = newFocusX, focusY = newFocusY }
     in
-        incrementIdx { model | nodes = Dict.insert i newNode model.nodes, viewBox = newViewBox }
+        incrementIdx { model | nodes = Dict.insert i newNode model.nodes }
 
 
 findNodeByIdx : List Node -> String -> Maybe Node
@@ -709,8 +699,8 @@ buildIdx numNodes alphabet =
                     val ++ buildIdx (numNodes - alphaLength) alphabet
 
 
-setViewBoxFocus : ( Float, Float ) -> ViewBox -> ViewBox
-setViewBoxFocus pos viewBox =
+setViewBoxFocus : ViewBox -> ( Float, Float ) -> ViewBox
+setViewBoxFocus viewBox pos =
     { viewBox | focusX = first pos, focusY = second pos }
 
 
