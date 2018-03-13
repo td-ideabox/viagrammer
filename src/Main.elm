@@ -222,11 +222,14 @@ moveViewBox currentViewBox dt =
         moveIfFartherThan =
             1.0
 
+        topSpeedRadius =
+            10.0
+
         speed =
-            0.05
+            Basics.max ((dist - topSpeedRadius) * 0.005) 0
 
         newPos =
-            moveTowards curPos (Debug.log ("Direction " ++ (toString dir)) dir) speed dt
+            moveTowards curPos dir speed dt
 
         newX =
             first newPos
@@ -235,7 +238,7 @@ moveViewBox currentViewBox dt =
             second newPos
     in
         if dist > moveIfFartherThan then
-            { currentViewBox | x = (Debug.log ("This is the new " ++ (toString newX)) newX), y = newY }
+            { currentViewBox | x = newX, y = newY }
         else
             currentViewBox
 
@@ -529,7 +532,7 @@ executeNormalCommand model =
                                 getPointToFocusViewBox ( n.x, n.y ) winWidth winHeight
                                     |> setViewBoxFocus model.viewBox
                         in
-                            { model | viewBox = focusedViewBox }
+                            { model | viewBox = focusedViewBox, currentCommand = "" }
 
                     Nothing ->
                         Debug.crash "Couldn't find node when labeling"
