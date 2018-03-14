@@ -17,6 +17,7 @@ import Css exposing (absolute, px, em, position, left, bold)
 import Html.Styled as Html exposing (..)
 import Svg.Styled as Svg exposing (g, line, rect, svg, text_)
 import Svg.Styled.Attributes as SvgAttr exposing (width, height, viewBox, x, y, x1, y1, x2, y2, stroke, rx, ry, fill)
+import Rng exposing (next)
 
 
 type Key
@@ -186,7 +187,7 @@ update msg model =
     case msg of
         Frame dt ->
             ( { model
-                | rng = calculateNextRng model.rng
+                | rng = Rng.next model.rng
                 , nodes = updateNodes dt model.nodes model.edges
                 , viewBox = moveViewBox model.viewBox dt
               }
@@ -251,29 +252,6 @@ updateNodes dt nodes edges =
             applyPhysics dt nodes edges v
         )
         nodes
-
-
-
---- Use the fibonnacci sequence as a random number
---- generator
-
-
-calculateNextRng : ( Int, Int ) -> ( Int, Int )
-calculateNextRng rng =
-    let
-        a =
-            first rng
-
-        b =
-            second rng
-
-        a2 =
-            b
-
-        b2 =
-            (a + b) % 1000
-    in
-        ( a2, b2 )
 
 
 
