@@ -58,6 +58,8 @@ getKey keyCode =
 
 type Mode
     = Normal
+    | LabelNode
+    | LabelEdge
 
 
 
@@ -278,7 +280,7 @@ executeNormalCommand model =
                                 getPointToFocusViewBox ( n.x, n.y ) winWidth winHeight
                                     |> setViewBoxFocus model.viewBox
                         in
-                            { model | viewBox = focusedViewBox, currentCommand = "" }
+                            { model | viewBox = focusedViewBox, currentCommand = "", mode = LabelNode }
 
                     Nothing ->
                         Debug.crash "Couldn't find node when labeling"
@@ -374,6 +376,22 @@ applyKey scale keyCode model =
                     _ ->
                         buildCommand keyCode model
 
+            LabelNode ->
+                case key of
+                    Escape ->
+                        { model | mode = Normal }
+
+                    _ ->
+                        model
+
+            LabelEdge ->
+                case key of
+                    Escape ->
+                        { model | mode = Normal }
+
+                    _ ->
+                        model
+
 
 setViewBoxFocus : ViewBox -> ( Float, Float ) -> ViewBox
 setViewBoxFocus viewBox pos =
@@ -438,11 +456,27 @@ view model =
         viewBoxAttr =
             String.join " " [ viewX, viewY, viewWidth, viewHeight ]
     in
-        div []
-            [ debugCommand [] [ Html.Styled.text model.currentCommand ]
-            , debugFocus [] [ Html.Styled.text "X" ]
-            , svg [ width viewWidth, height viewHeight, viewBox viewBoxAttr ] elements
-            ]
+        case model.mode of
+            Normal ->
+                div []
+                    [ debugCommand [] [ Html.Styled.text model.currentCommand ]
+                    , debugFocus [] [ Html.Styled.text "Normal" ]
+                    , svg [ width viewWidth, height viewHeight, viewBox viewBoxAttr ] elements
+                    ]
+
+            LabelNode ->
+                div []
+                    [ debugCommand [] [ Html.Styled.text model.currentCommand ]
+                    , debugFocus [] [ Html.Styled.text "Label Node" ]
+                    , svg [ width viewWidth, height viewHeight, viewBox viewBoxAttr ] elements
+                    ]
+
+            LabelEdge ->
+                div []
+                    [ debugCommand [] [ Html.Styled.text model.currentCommand ]
+                    , debugFocus [] [ Html.Styled.text "Label Edge" ]
+                    , svg [ width viewWidth, height viewHeight, viewBox viewBoxAttr ] elements
+                    ]
 
 
 

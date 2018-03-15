@@ -17,6 +17,6 @@ debugFocus =
         [ position absolute
         , Css.left (Css.pct 50)
         , Css.top (Css.pct 50)
-        , Css.color (Css.rgb 255 0 0)
+        , Css.color (Css.rgba 255 0 0 0.5)
         , Css.fontWeight Css.bold
         ]
