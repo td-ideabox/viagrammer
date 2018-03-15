@@ -5,6 +5,7 @@ import Array exposing (..)
 import Char exposing (..)
 import Debug exposing (..)
 import Dict exposing (..)
+import Edge exposing (Edge, edgeToSvg, initialEdge)
 import Keyboard exposing (..)
 import Physics exposing (attract, direction, distance, moveTowards, repulse, sumForces)
 import String exposing (toInt)
@@ -13,11 +14,15 @@ import Time exposing (Time)
 import Tuple exposing (..)
 import Window
 import Window
-import Css exposing (absolute, px, em, position, left, bold)
-import Html.Styled as Html exposing (..)
-import Svg.Styled as Svg exposing (g, line, rect, svg, text_)
-import Svg.Styled.Attributes as SvgAttr exposing (width, height, viewBox, x, y, x1, y1, x2, y2, stroke, rx, ry, fill)
+import Html
+import Html.Styled exposing (..)
+import Svg
+import Svg.Styled exposing (..)
+import Svg.Styled.Attributes exposing (..)
 import Rng exposing (next)
+import Graph exposing (..)
+import DebugView exposing (..)
+import Node exposing (Node, buildIdx, findNodeByIdx, initialNode, nodeToSvg)
 
 
 type Key
@@ -79,59 +84,6 @@ initialViewBox =
     , zoom = 1
     , focusX = 0
     , focusY = 0
-    }
-
-
-type alias Node =
-    { idx : String
-    , color : String
-    , x : Float
-    , y : Float
-    , ignoreForces : Bool
-    , width : Int
-    , height : Int
-    , roundX : Int
-    , roundY : Int
-    , label : String
-    }
-
-
-
--- We're initializing data with valid but incorrect data. Is
--- there a better pattern?
-
-
-initialNode : Node
-initialNode =
-    { idx = "unassigned"
-    , x = 0
-    , y = 0
-    , ignoreForces = False
-    , label = ""
-    , color = "#f00"
-    , width = 80
-    , height = 80
-    , roundX = 15
-    , roundY = 15
-    }
-
-
-type alias Edge =
-    { key : String
-    , color : String
-    , label : String
-    , src : String
-    , dest : String
-    }
-
-
-initialEdge : Edge
-initialEdge =
-    { key = "unassigned edge"
-    , color = "#0f0"
-    , label = ""
-    , src = ""
-    , dest = ""
     }
 
 
@@ -206,6 +158,44 @@ update msg model =
             )
 
 
+incrementIdx : Model -> Model
+incrementIdx model =
+    { model | indexCounter = model.indexCounter + 1 }
+
+
+insertNode : Model -> Model
+insertNode model =
+    let
+        --- Need to fix issue where nodes fly off if they have
+        --- the exact same x,y
+        maxOffset =
+            200
+
+        xRand =
+            (first model.rng) % maxOffset |> toFloat
+
+        yRand =
+            (second model.rng) % maxOffset |> toFloat
+
+        i =
+            buildIdx model.indexCounter model.indexAlphabet
+
+        newX =
+            (toFloat (model.windowSize.width) + xRand) / 2
+
+        newY =
+            (toFloat (model.windowSize.height) + yRand) / 2
+
+        newNode =
+            { initialNode
+                | x = newX
+                , y = newY
+                , idx = i
+            }
+    in
+        incrementIdx { model | nodes = Dict.insert i newNode model.nodes }
+
+
 moveViewBox : ViewBox -> Float -> ViewBox
 moveViewBox currentViewBox dt =
     let
@@ -219,7 +209,7 @@ moveViewBox currentViewBox dt =
             distance curPos focusPos
 
         dir =
-            direction curPos focusPos
+            Physics.direction curPos focusPos
 
         moveIfFartherThan =
             1.0
@@ -243,117 +233,6 @@ moveViewBox currentViewBox dt =
             { currentViewBox | x = newX, y = newY }
         else
             currentViewBox
-
-
-updateNodes : Float -> Dict String Node -> List Edge -> Dict String Node
-updateNodes dt nodes edges =
-    Dict.map
-        (\k v ->
-            applyPhysics dt nodes edges v
-        )
-        nodes
-
-
-
--- This is probably suuuuuper slow right now, n^2 at least
-
-
-calcForcesOnNode : Node -> Dict String Node -> List Edge -> List ( Float, Float )
-calcForcesOnNode node nodes edges =
-    let
-        nodeList =
-            Dict.values nodes
-
-        nodeEdges =
-            List.filter (\e -> e.src == node.idx) edges
-    in
-        List.map
-            (\n ->
-                let
-                    p1 =
-                        ( node.x, node.y )
-
-                    p2 =
-                        ( n.x, n.y )
-
-                    dist =
-                        distance p1 p2
-
-                    dir =
-                        direction p1 p2
-
-                    minRadius =
-                        100
-                in
-                    --- Don't apply a force to yourself or if you outside the
-                    --- affected radius
-                    if n.idx == node.idx || dist > minRadius || node.ignoreForces then
-                        ( 0, 0 )
-                    else
-                        repulse dist dir minRadius
-            )
-            nodeList
-            |> List.append
-                (List.map
-                    (\e ->
-                        let
-                            src =
-                                Dict.get e.src nodes
-
-                            p1 =
-                                case src of
-                                    Just s ->
-                                        ( s.x, s.y )
-
-                                    Nothing ->
-                                        Debug.crash (e.src ++ " is not in the node map!")
-
-                            dest =
-                                Dict.get e.dest nodes
-
-                            p2 =
-                                case dest of
-                                    Just d ->
-                                        ( d.x, d.y )
-
-                                    Nothing ->
-                                        Debug.crash (e.dest ++ " is not in the node map")
-
-                            dist =
-                                distance p1 p2
-
-                            dir =
-                                direction p1 p2
-
-                            minRadius =
-                                100
-                        in
-                            if dist < minRadius || node.ignoreForces then
-                                ( 0, 0 )
-                            else
-                                attract dist dir minRadius
-                    )
-                    nodeEdges
-                )
-
-
-applyPhysics : Float -> Dict String Node -> List Edge -> Node -> Node
-applyPhysics dt nodes edges node =
-    let
-        forcesOnNode =
-            calcForcesOnNode node nodes edges
-
-        finalForce =
-            sumForces forcesOnNode
-
-        vx =
-            first finalForce
-
-        vy =
-            second finalForce
-    in
-        --- Calculate force to apply based on distance and direction
-        { node | x = node.x + vx * dt, y = node.y + vy * dt }
 
 
 
@@ -496,79 +375,6 @@ applyKey scale keyCode model =
                         buildCommand keyCode model
 
 
-incrementIdx : Model -> Model
-incrementIdx model =
-    { model | indexCounter = model.indexCounter + 1 }
-
-
-insertNode : Model -> Model
-insertNode model =
-    let
-        --- Need to fix issue where nodes fly off if they have
-        --- the exact same x,y
-        maxOffset =
-            200
-
-        xRand =
-            (first model.rng) % maxOffset |> toFloat
-
-        yRand =
-            (second model.rng) % maxOffset |> toFloat
-
-        i =
-            buildIdx model.indexCounter model.indexAlphabet
-
-        newX =
-            (toFloat (model.windowSize.width) + xRand) / 2
-
-        newY =
-            (toFloat (model.windowSize.height) + yRand) / 2
-
-        newNode =
-            { initialNode
-                | x = newX
-                , y = newY
-                , idx = i
-            }
-    in
-        incrementIdx { model | nodes = Dict.insert i newNode model.nodes }
-
-
-findNodeByIdx : List Node -> String -> Maybe Node
-findNodeByIdx nodes idx =
-    List.filter (\n -> n.idx == idx) nodes |> List.head
-
-
-buildIdx : Int -> Array String -> String
-buildIdx numNodes alphabet =
-    let
-        alphaLength =
-            Array.length alphabet
-
-        --- Integer division to find quotient (how long the id is going to be if
-        --- there are more nodes than characters in the alphabet)
-        q =
-            numNodes // alphaLength
-
-        i =
-            numNodes % alphaLength
-
-        a =
-            Array.get i alphabet
-    in
-        case a of
-            Nothing ->
-                --- TODO: Handle the case where we could not get a letter from
-                --- the alphabet
-                Debug.crash "Could not get char from alphabet while building idx!"
-
-            Just val ->
-                if q == 0 then
-                    val
-                else
-                    val ++ buildIdx (numNodes - alphaLength) alphabet
-
-
 setViewBoxFocus : ViewBox -> ( Float, Float ) -> ViewBox
 setViewBoxFocus viewBox pos =
     { viewBox | focusX = first pos, focusY = second pos }
@@ -592,146 +398,8 @@ getPointToFocusViewBox coordPoint width height =
         ( viewX, viewY )
 
 
-nodeToSvg : Node -> Svg.Svg msg
-nodeToSvg node =
-    let
-        xPos =
-            toString node.x
-
-        yPos =
-            toString node.y
-
-        nWidth =
-            toString node.width
-
-        nHeight =
-            toString node.height
-
-        roundX =
-            toString node.roundX
-
-        roundY =
-            toString node.roundY
-
-        idx =
-            node.idx
-
-        idxX =
-            toString (node.x + 10)
-
-        idxY =
-            toString (node.y + 15)
-
-        debugCoordX =
-            toString (node.x + 10)
-
-        debugCoordY =
-            toString (node.y + 60)
-
-        debugCoord =
-            toString (round node.x) ++ ", " ++ toString (round node.y)
-
-        labelX =
-            toFloat node.width
-                |> (*) 0.25
-                |> (+) node.x
-                |> toString
-
-        labelY =
-            toFloat node.height
-                |> (*) 0.5
-                |> (+) node.y
-                |> toString
-    in
-        g []
-            [ Svg.rect
-                [ SvgAttr.x xPos
-                , SvgAttr.y yPos
-                , SvgAttr.width nWidth
-                , SvgAttr.height nHeight
-                , SvgAttr.rx roundX
-                , SvgAttr.ry roundY
-                , SvgAttr.fill "transparent"
-                , SvgAttr.stroke "black"
-                ]
-                []
-            , Svg.text_ [ SvgAttr.x idxX, SvgAttr.y idxY ] [ Svg.text node.idx ]
-            , Svg.text_ [ SvgAttr.x debugCoordX, SvgAttr.y debugCoordY ] [ Svg.text debugCoord ]
-            , Svg.text_ [ SvgAttr.x labelX, SvgAttr.y labelY ] [ Svg.text node.label ]
-            ]
-
-
-edgeToSvg : Edge -> Dict String Node -> Svg.Svg msg
-edgeToSvg edge nodes =
-    let
-        src =
-            Dict.get edge.src nodes
-
-        srcX =
-            case src of
-                Just s ->
-                    toString s.x
-
-                Nothing ->
-                    Debug.crash "Cant render edge svg cause src x node missing from node map"
-
-        srcY =
-            case src of
-                Just s ->
-                    toString s.y
-
-                Nothing ->
-                    Debug.crash "Cant render src y of edge svg cause node missing from node map"
-
-        dest =
-            Dict.get edge.dest nodes
-
-        destX =
-            case dest of
-                Just d ->
-                    toString d.x
-
-                Nothing ->
-                    Debug.crash "Cant render edge cause dest x is missing from node map"
-
-        destY =
-            case dest of
-                Just d ->
-                    toString d.y
-
-                Nothing ->
-                    Debug.crash "Cant render edge cause desy y is missing from node map"
-    in
-        Svg.g []
-            [ Svg.line
-                [ SvgAttr.x1 srcX
-                , SvgAttr.y1 srcY
-                , SvgAttr.x2 destX
-                , SvgAttr.y2 destY
-                , SvgAttr.stroke "black"
-                ]
-                []
-            ]
-
-
 
 ---- VIEW ----
-
-
-debugCommand : List (Html.Attribute msg) -> List (Html msg) -> Html msg
-debugCommand =
-    Html.styled div [ position absolute, Css.left (Css.pct 50), Css.fontWeight Css.bold ]
-
-
-debugFocus : List (Html.Attribute msg) -> List (Html msg) -> Html msg
-debugFocus =
-    Html.styled div
-        [ position absolute
-        , Css.left (Css.pct 50)
-        , Css.top (Css.pct 50)
-        , Css.color (Css.rgb 255 0 0)
-        , Css.fontWeight Css.bold
-        ]
 
 
 view : Model -> Html Msg
@@ -771,10 +439,9 @@ view model =
             String.join " " [ viewX, viewY, viewWidth, viewHeight ]
     in
         div []
-            [ debugCommand [] [ Html.text model.currentCommand ]
-            , debugFocus [] [ Html.text "X" ]
-            , Svg.svg [ SvgAttr.width viewWidth, SvgAttr.height viewHeight, SvgAttr.viewBox viewBoxAttr ]
-                elements
+            [ debugCommand [] [ Html.Styled.text model.currentCommand ]
+            , debugFocus [] [ Html.Styled.text "X" ]
+            , svg [ width viewWidth, height viewHeight, viewBox viewBoxAttr ] elements
             ]
 
 
@@ -785,7 +452,7 @@ view model =
 main : Program Never Model Msg
 main =
     Html.program
-        { view = view
+        { view = view >> Html.Styled.toUnstyled
         , init = init
         , update = update
         , subscriptions =
