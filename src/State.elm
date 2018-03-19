@@ -47,10 +47,10 @@ update msg model =
             , Cmd.none
             )
 
-        EditNodeMsg nodeIdx newLabel ->
+        EditNodeMsg node newLabel ->
             let
                 updatedNodes =
-                    Dict.update nodeIdx (Maybe.map (\n -> { n | label = newLabel })) model.nodes
+                    Dict.update node.idx (Maybe.map (\n -> { n | label = newLabel })) model.nodes
             in
                 ( { model | nodes = updatedNodes }, Cmd.none )
 
@@ -109,13 +109,10 @@ moveViewBox currentViewBox dt =
             Physics.direction curPos focusPos
 
         moveIfFartherThan =
-            1.0
-
-        topSpeedRadius =
-            10.0
+            0.1
 
         speed =
-            Basics.max ((dist - topSpeedRadius) * 0.005) 0
+            Basics.max ((dist) * 0.005) 0
 
         newPos =
             moveTowards curPos dir speed dt
@@ -174,8 +171,9 @@ executeNormalCommand model =
                             focusedViewBox =
                                 getPointToFocusViewBox ( n.x, n.y ) winWidth winHeight
                                     |> setViewBoxFocus model.viewBox
+                                    |> setViewBoxOrigin
                         in
-                            { model | viewBox = focusedViewBox, currentCommand = "", mode = (LabelNode n.idx) }
+                            { model | viewBox = focusedViewBox, currentCommand = "", mode = (LabelNode n) }
 
                     Nothing ->
                         Debug.crash "Couldn't find node when labeling"
@@ -291,6 +289,11 @@ applyKey scale keyCode model =
 setViewBoxFocus : ViewBox -> ( Float, Float ) -> ViewBox
 setViewBoxFocus viewBox pos =
     { viewBox | focusX = first pos, focusY = second pos }
+
+
+setViewBoxOrigin : ViewBox -> ViewBox
+setViewBoxOrigin viewBox =
+    { viewBox | originX = viewBox.x, originY = viewBox.y }
 
 
 getPointToFocusViewBox : ( Float, Float ) -> Float -> Float -> ( Float, Float )

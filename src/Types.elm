@@ -16,7 +16,7 @@ type Msg
     | KeyDown Keyboard.KeyCode
     | KeyUp Keyboard.KeyCode
     | WindowSize Window.Size
-    | EditNodeMsg String String
+    | EditNodeMsg Node String
 
 
 type Key
@@ -52,7 +52,7 @@ getKey keyCode =
 
 type Mode
     = Normal
-    | LabelNode String
+    | LabelNode Node
     | LabelEdge
 
 
@@ -70,6 +70,8 @@ type alias ViewBox =
     , zoom : Float
     , focusX : Float
     , focusY : Float
+    , originX : Float
+    , originY : Float
     }
 
 
@@ -80,6 +82,8 @@ initialViewBox =
     , zoom = 1
     , focusX = 0
     , focusY = 0
+    , originX = 0
+    , originY = 0
     }
 
 

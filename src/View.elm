@@ -34,11 +34,11 @@ view model =
                 , svgCanvas model
                 ]
 
-        LabelNode nodeIdx ->
+        LabelNode node ->
             div []
                 [ debugCommand [] [ Html.Styled.text model.currentCommand ]
                 , debugFocus [] [ Html.Styled.text "Label Node" ]
-                , editNodeView nodeIdx
+                , editNodeView model.viewBox node
                 , svgCanvas model
                 ]
 
