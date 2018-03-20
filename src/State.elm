@@ -56,7 +56,11 @@ update msg model =
                 ( { model | nodes = updatedNodes }, Cmd.none )
 
         EditEdgeMsg edge newLabel ->
-            ( model, Cmd.none )
+            let
+                updatedEdges =
+                    Dict.update edge.key (Maybe.map (\e -> { e | label = newLabel })) model.edges
+            in
+                ( { model | edges = updatedEdges }, Cmd.none )
 
 
 incrementIdx : Model -> Model
