@@ -16,6 +16,16 @@ import Physics exposing (distance)
 
 editNodeView : ViewBox -> Node -> Html Msg
 editNodeView currentViewBox node =
+    editElementView currentViewBox node.label (EditNodeMsg node)
+
+
+editEdgeView : ViewBox -> Edge -> Html Msg
+editEdgeView currentViewBox edge =
+    editElementView currentViewBox edge.label (EditEdgeMsg edge)
+
+
+editElementView : ViewBox -> String -> (String -> Msg) -> Html Msg
+editElementView currentViewBox elementLabel onInputCallback =
     let
         curPos =
             ( currentViewBox.x, currentViewBox.y )
@@ -48,14 +58,9 @@ editNodeView currentViewBox node =
                 ]
                 []
                 [ styled label [ marginRight (px 2) ] [] [ Html.Styled.text "Label" ]
-                , styled input [ borderRadius (px 3) ] [ placeholder node.label, onInput (EditNodeMsg node) ] []
+                , styled input [ borderRadius (px 3) ] [ placeholder elementLabel, onInput onInputCallback ] []
                 ]
             ]
-
-
-editEdgeView : ViewBox -> Edge -> Html Msg
-editEdgeView viewBox edge =
-    styled div [] [] [ text edge.key ]
 
 
 
