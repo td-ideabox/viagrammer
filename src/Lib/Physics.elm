@@ -113,3 +113,18 @@ sumForces forces =
         )
         ( 0, 0 )
         forces
+
+
+percentTowardsDest : ( Float, Float ) -> ( Float, Float ) -> ( Float, Float ) -> Float
+percentTowardsDest originPos currentPos destPos =
+    let
+        distToDest =
+            distance currentPos destPos
+
+        distBetweenOriginAndFocus =
+            distance originPos destPos
+
+        normalizedDestDist =
+            distToDest / distBetweenOriginAndFocus
+    in
+        normalizedDestDist

@@ -23,26 +23,11 @@ editNodeView currentViewBox node =
         focusPos =
             ( currentViewBox.focusX, currentViewBox.focusY )
 
-        distToDest =
-            distance curPos focusPos
-
         originPos =
             ( currentViewBox.originX, currentViewBox.originY )
 
-        distFromOrigin =
-            distance curPos originPos
-
-        distBetweenOriginAndFocus =
-            distance originPos focusPos
-
-        normalizedDestDist =
-            distToDest / distBetweenOriginAndFocus
-
-        normalizedOriginDist =
-            distFromOrigin / distBetweenOriginAndFocus
-
         alpha =
-            normalizedOriginDist - normalizedDestDist
+            1 - Physics.percentTowardsDest originPos curPos focusPos
     in
         Html.Styled.styled
             div
@@ -63,7 +48,7 @@ editNodeView currentViewBox node =
                 ]
                 []
                 [ styled label [ marginRight (px 2) ] [] [ Html.Styled.text "Label" ]
-                , styled input [ borderRadius (px 3) ] [ placeholder node.label, onInput (Types.EditNodeMsg node) ] []
+                , styled input [ borderRadius (px 3) ] [ placeholder node.label, onInput (EditNodeMsg node) ] []
                 ]
             ]
 
