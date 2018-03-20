@@ -35,7 +35,7 @@ svgCanvas model =
             Dict.map (\k v -> nodeToSvg v) model.nodes |> Dict.values
 
         edgesSvg =
-            List.map (\e -> edgeToSvg e model.nodes) model.edges
+            Dict.map (\k v -> edgeToSvg v model.nodes) model.edges |> Dict.values
 
         elements =
             List.append nodesSvg edgesSvg

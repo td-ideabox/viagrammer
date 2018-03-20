@@ -30,21 +30,19 @@ view model =
         Normal ->
             div []
                 [ debugCommand [] [ Html.Styled.text model.currentCommand ]
-                , debugFocus [] [ Html.Styled.text "Normal" ]
                 , svgCanvas model
                 ]
 
         LabelNode node ->
             div []
                 [ debugCommand [] [ Html.Styled.text model.currentCommand ]
-                , debugFocus [] [ Html.Styled.text "Label Node" ]
                 , editNodeView model.viewBox node
                 , svgCanvas model
                 ]
 
-        LabelEdge ->
+        LabelEdge edge ->
             div []
                 [ debugCommand [] [ Html.Styled.text model.currentCommand ]
-                , debugFocus [] [ Html.Styled.text "Label Edge" ]
+                , editEdgeView model.viewBox edge
                 , svgCanvas model
                 ]

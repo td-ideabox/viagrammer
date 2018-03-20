@@ -17,6 +17,7 @@ type Msg
     | KeyUp Keyboard.KeyCode
     | WindowSize Window.Size
     | EditNodeMsg Node String
+    | EditEdgeMsg Edge String
 
 
 type Key
@@ -53,7 +54,7 @@ getKey keyCode =
 type Mode
     = Normal
     | LabelNode Node
-    | LabelEdge
+    | LabelEdge Edge
 
 
 
@@ -142,7 +143,7 @@ initialEdge =
 
 type alias Model =
     { nodes : Dict String Node
-    , edges : List Edge
+    , edges : Dict String Edge
     , indexAlphabet : Array String
     , commandAlphabet : List Char
     , indexCounter : Int
@@ -158,7 +159,7 @@ type alias Model =
 model : Model
 model =
     { nodes = Dict.empty
-    , edges = []
+    , edges = Dict.empty
     , mode = Normal
     , indexAlphabet = Array.fromList [ "a", "b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "u", "v", "w", "x", "y", "z" ]
     , commandAlphabet = [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' ]

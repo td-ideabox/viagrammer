@@ -53,6 +53,11 @@ editNodeView currentViewBox node =
             ]
 
 
+editEdgeView : ViewBox -> Edge -> Html Msg
+editEdgeView viewBox edge =
+    styled div [] [] [ text edge.key ]
+
+
 
 --Debug Views
 

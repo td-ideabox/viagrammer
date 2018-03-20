@@ -13,6 +13,7 @@ import Tuple exposing (..)
 import Window
 import Rng exposing (next)
 import Types exposing (..)
+import Geometry exposing (..)
 
 
 init : ( Model, Cmd Msg )
@@ -53,6 +54,9 @@ update msg model =
                     Dict.update node.idx (Maybe.map (\n -> { n | label = newLabel })) model.nodes
             in
                 ( { model | nodes = updatedNodes }, Cmd.none )
+
+        EditEdgeMsg edge newLabel ->
+            ( model, Cmd.none )
 
 
 incrementIdx : Model -> Model
@@ -161,24 +165,51 @@ executeNormalCommand model =
             in
                 case targetNode of
                     Just n ->
-                        let
-                            winWidth =
-                                toFloat model.windowSize.width
-
-                            winHeight =
-                                toFloat model.windowSize.height
-
-                            focusedViewBox =
-                                getPointToFocusViewBox ( n.x, n.y ) winWidth winHeight
-                                    |> setViewBoxFocus model.viewBox
-                                    |> setViewBoxOrigin
-                        in
-                            { model | viewBox = focusedViewBox, currentCommand = "", mode = (LabelNode n) }
+                        { model
+                            | viewBox = focusViewBox ( n.x, n.y ) model.windowSize model.viewBox
+                            , currentCommand = ""
+                            , mode = (LabelNode n)
+                        }
 
                     Nothing ->
                         Debug.crash "Couldn't find node when labeling"
         else if startEdgeLabel then
-            { model | currentCommand = "add edge label " ++ edgeToLabel }
+            let
+                targetEdge =
+                    Dict.get edgeToLabel model.edges
+            in
+                case targetEdge of
+                    Just e ->
+                        let
+                            srcNode =
+                                Dict.get e.src model.nodes
+                        in
+                            case srcNode of
+                                Just n1 ->
+                                    let
+                                        destNode =
+                                            Dict.get e.dest model.nodes
+                                    in
+                                        case destNode of
+                                            Just n2 ->
+                                                let
+                                                    midPoint =
+                                                        lineMidPoint ( n1.x, n1.y ) ( n2.x, n2.y )
+                                                in
+                                                    { model
+                                                        | viewBox = focusViewBox ( first midPoint, second midPoint ) model.windowSize model.viewBox
+                                                        , currentCommand = ""
+                                                        , mode = (LabelEdge e)
+                                                    }
+
+                                            Nothing ->
+                                                Debug.crash ("Couldn't find destNode " ++ e.dest ++ " of edge " ++ e.key)
+
+                                Nothing ->
+                                    Debug.crash ("Couldn't find srcNode " ++ e.src ++ " of edge " ++ e.key)
+
+                    Nothing ->
+                        model
         else if List.length pieces == 2 then
             let
                 srcIdx =
@@ -187,7 +218,7 @@ executeNormalCommand model =
                             n
 
                         Nothing ->
-                            ""
+                            Debug.crash ("Missing src idx in " ++ model.currentCommand)
 
                 destIdx =
                     case (List.drop 1 pieces |> List.head) of
@@ -195,7 +226,7 @@ executeNormalCommand model =
                             n
 
                         Nothing ->
-                            ""
+                            Debug.crash ("Missing dest idx in " ++ model.currentCommand)
 
                 nodes =
                     Dict.values model.nodes
@@ -205,6 +236,9 @@ executeNormalCommand model =
 
                 destNode =
                     findNodeByIdx nodes destIdx
+
+                key =
+                    srcIdx ++ "t" ++ destIdx
             in
                 case srcNode of
                     Just src ->
@@ -214,21 +248,21 @@ executeNormalCommand model =
                                     isSameNode =
                                         src.idx == dest.idx
 
-                                    key =
-                                        model.currentCommand
-
                                     edgeAlreadyExists =
-                                        (List.filter (\e -> e.key == key) model.edges |> List.length) > 0
+                                        Dict.get key model.edges
 
                                     newEdge =
-                                        { initialEdge | src = src.idx, dest = dest.idx, key = model.currentCommand }
+                                        { initialEdge | src = src.idx, dest = dest.idx, key = key }
                                 in
-                                    if (isSameNode) then
-                                        { model | currentCommand = "", errMsg = "Cannot create edge to same node currently" }
-                                    else if (edgeAlreadyExists) then
-                                        { model | currentCommand = "", errMsg = "Edge already exists" }
-                                    else
-                                        { model | currentCommand = "", edges = List.append model.edges [ newEdge ] }
+                                    case edgeAlreadyExists of
+                                        Just e ->
+                                            { model | currentCommand = "", errMsg = "Edge already exists" }
+
+                                        Nothing ->
+                                            if (isSameNode) then
+                                                { model | currentCommand = "", errMsg = "Cannot create edge to same node currently" }
+                                            else
+                                                { model | currentCommand = "", edges = Dict.insert key newEdge model.edges }
 
                             Nothing ->
                                 { model | currentCommand = "", errMsg = "destination node doesn't exist" }
@@ -269,7 +303,7 @@ applyKey scale keyCode model =
                     _ ->
                         buildCommand keyCode model
 
-            LabelNode idx ->
+            LabelNode node ->
                 case key of
                     Escape ->
                         { model | mode = Normal }
@@ -277,7 +311,7 @@ applyKey scale keyCode model =
                     _ ->
                         model
 
-            LabelEdge ->
+            LabelEdge edge ->
                 case key of
                     Escape ->
                         { model | mode = Normal }
@@ -296,14 +330,27 @@ setViewBoxOrigin viewBox =
     { viewBox | originX = viewBox.x, originY = viewBox.y }
 
 
-getPointToFocusViewBox : ( Float, Float ) -> Float -> Float -> ( Float, Float )
-getPointToFocusViewBox coordPoint width height =
+focusViewBox : ( Float, Float ) -> Window.Size -> ViewBox -> ViewBox
+focusViewBox coordPoint windowSize viewBox =
+    getPointToFocusViewBox ( first coordPoint, second coordPoint ) windowSize
+        |> setViewBoxFocus viewBox
+        |> setViewBoxOrigin
+
+
+getPointToFocusViewBox : ( Float, Float ) -> Window.Size -> ( Float, Float )
+getPointToFocusViewBox coordPoint windowSize =
     let
         x =
             first coordPoint
 
         y =
             second coordPoint
+
+        width =
+            windowSize.width |> toFloat
+
+        height =
+            windowSize.height |> toFloat
 
         viewX =
             x - (width * 0.5)
@@ -349,7 +396,7 @@ buildIdx numNodes alphabet =
                     val ++ buildIdx (numNodes - alphaLength) alphabet
 
 
-updateNodes : Float -> Dict String Node -> List Edge -> Dict String Node
+updateNodes : Float -> Dict String Node -> Dict String Edge -> Dict String Node
 updateNodes dt nodes edges =
     Dict.map
         (\k v ->
@@ -362,14 +409,14 @@ updateNodes dt nodes edges =
 -- This is probably suuuuuper slow right now, n^2 at least
 
 
-calcForcesOnNode : Node -> Dict String Node -> List Edge -> List ( Float, Float )
+calcForcesOnNode : Node -> Dict String Node -> Dict String Edge -> List ( Float, Float )
 calcForcesOnNode node nodes edges =
     let
         nodeList =
             Dict.values nodes
 
         nodeEdges =
-            List.filter (\e -> e.src == node.idx) edges
+            List.filter (\e -> e.src == node.idx) (Dict.values edges)
     in
         List.map
             (\n ->
@@ -441,7 +488,7 @@ calcForcesOnNode node nodes edges =
                 )
 
 
-applyPhysics : Float -> Dict String Node -> List Edge -> Node -> Node
+applyPhysics : Float -> Dict String Node -> Dict String Edge -> Node -> Node
 applyPhysics dt nodes edges node =
     let
         forcesOnNode =
