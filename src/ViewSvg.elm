@@ -7,6 +7,7 @@ import Svg
 import Svg.Styled exposing (..)
 import Svg.Styled.Attributes exposing (..)
 import Basics exposing (round)
+import Geometry exposing (..)
 
 
 -- Functions which deal only with svg go here
@@ -57,52 +58,54 @@ edgeToSvg edge nodes =
     let
         src =
             Dict.get edge.src nodes
-
-        srcX =
-            case src of
-                Just s ->
-                    toString s.x
-
-                Nothing ->
-                    Debug.crash "Cant render edge svg cause src x node missing from node map"
-
-        srcY =
-            case src of
-                Just s ->
-                    toString s.y
-
-                Nothing ->
-                    Debug.crash "Cant render src y of edge svg cause node missing from node map"
-
-        dest =
-            Dict.get edge.dest nodes
-
-        destX =
-            case dest of
-                Just d ->
-                    toString d.x
-
-                Nothing ->
-                    Debug.crash "Cant render edge cause dest x is missing from node map"
-
-        destY =
-            case dest of
-                Just d ->
-                    toString d.y
-
-                Nothing ->
-                    Debug.crash "Cant render edge cause desy y is missing from node map"
     in
-        g []
-            [ line
-                [ x1 srcX
-                , y1 srcY
-                , x2 destX
-                , y2 destY
-                , stroke "black"
-                ]
-                []
-            ]
+        case src of
+            Just s ->
+                let
+                    dest =
+                        Dict.get edge.dest nodes
+                in
+                    case dest of
+                        Just d ->
+                            let
+                                srcX =
+                                    toString s.x
+
+                                srcY =
+                                    toString s.y
+
+                                destX =
+                                    toString d.x
+
+                                destY =
+                                    toString d.y
+
+                                midPoint =
+                                    Geometry.lineMidPoint ( s.x, s.y ) ( d.x, d.y )
+
+                                labelX =
+                                    first midPoint |> toString
+
+                                labelY =
+                                    second midPoint |> toString
+                            in
+                                g []
+                                    [ line
+                                        [ x1 srcX
+                                        , y1 srcY
+                                        , x2 destX
+                                        , y2 destY
+                                        , stroke "black"
+                                        ]
+                                        []
+                                    , text_ [ x labelX, y labelY ] [ Svg.Styled.text edge.label ]
+                                    ]
+
+                        Nothing ->
+                            Debug.crash "Cant render edge because dest node is missing: "
+
+            Nothing ->
+                Debug.crash "Cant render edge svg cause src node is missing"
 
 
 
