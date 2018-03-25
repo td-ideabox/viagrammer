@@ -31,6 +31,7 @@ view model =
             div []
                 [ debugCommand [] [ Html.Styled.text model.currentCommand ]
                 , svgCanvas model
+                , downloadExportButton model
                 ]
 
         LabelNode node ->

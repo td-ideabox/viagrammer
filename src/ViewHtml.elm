@@ -1,4 +1,4 @@
-module ViewHtml exposing (..)
+module ViewHtml exposing (editNodeView, editEdgeView, downloadExportButton, debugCommand)
 
 import Html
 import Html.Styled exposing (..)
@@ -61,6 +61,74 @@ editElementView currentViewBox elementLabel onInputCallback =
                 , styled input [ borderRadius (px 3) ] [ placeholder elementLabel, onInput onInputCallback ] []
                 ]
             ]
+
+
+
+-- Export
+
+
+downloadExportButton : Model -> Html Msg
+downloadExportButton model =
+    let
+        nodes =
+            Dict.values model.nodes
+
+        edges =
+            Dict.values model.edges
+
+        dot =
+            exportToDot nodes edges
+    in
+        styled a
+            []
+            [ type_ "button", href <| "data:text/plain;charset=utf-8," ++ dot, downloadAs "graph.dot" ]
+            [ styled button [] [] [ text "Download" ] ]
+
+
+exportToDot : List Node -> List Edge -> String
+exportToDot nodes edges =
+    let
+        nodeStr =
+            nodesToDot nodes
+
+        edgeStr =
+            edgesToDot edges
+
+        content =
+            String.join "\n" [ nodeStr, edgeStr ]
+
+        dot =
+            String.concat [ "digraph", "{", content, "}" ]
+    in
+        dot
+
+
+edgesToDot : List Edge -> String
+edgesToDot edges =
+    List.map
+        (\v ->
+            String.concat v.src.idx "->" v.dest.idx
+        )
+        edges
+        |> String.join "\n"
+
+
+nodesToDot : List Node -> String
+nodesToDot nodes =
+    List.map
+        (\n ->
+            let
+                label =
+                    n.label
+            in
+                case label of
+                    "" ->
+                        n.idx
+
+                    _ ->
+                        String.concat [ n.idx, "[", "label", "=", '"', n.label, '"', "]" ]
+        )
+        nodes
 
 
 
