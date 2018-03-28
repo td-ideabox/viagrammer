@@ -108,9 +108,18 @@ edgesToDot : List Edge -> String
 edgesToDot edges =
     List.map
         (\edge ->
-            String.concat [ "\t", edge.src, "->", edge.dest ]
+            case edge.label of
+                "" ->
+                    { edge | label = edge.key }
+
+                _ ->
+                    edge
         )
         edges
+        |> List.map
+            (\edge ->
+                String.concat [ "\t", edge.src, "->", edge.dest, "[label=\"", edge.label, "\"]" ]
+            )
         |> String.join "\n"
 
 
@@ -127,7 +136,7 @@ nodesToDot nodes =
                         String.concat [ node.idx ]
 
                     _ ->
-                        String.concat [ node.idx, "[", "label", "=", "\"", node.label, "\"", "]" ]
+                        String.concat [ node.idx, "[label=\"", node.label, "\"]" ]
         )
         nodes
         |> List.map (\str -> "\t" ++ str)
