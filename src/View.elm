@@ -30,8 +30,8 @@ view model =
         Normal ->
             div []
                 [ debugCommand [] [ Html.Styled.text model.currentCommand ]
-                , svgCanvas model
                 , downloadExportButton model
+                , svgCanvas model
                 ]
 
         LabelNode node ->

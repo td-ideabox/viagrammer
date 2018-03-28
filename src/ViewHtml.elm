@@ -9,6 +9,7 @@ import Css exposing (..)
 import Types exposing (..)
 import Dict exposing (..)
 import Physics exposing (distance)
+import Http exposing (..)
 
 
 -- Functions which deal only in Html go here.
@@ -81,7 +82,7 @@ downloadExportButton model =
     in
         styled a
             []
-            [ type_ "button", href <| "data:text/plain;charset=utf-8," ++ dot, downloadAs "graph.dot" ]
+            [ type_ "button", href <| "data:text/plain;charset=utf-8," ++ encodeUri dot, downloadAs "graph.dot" ]
             [ styled button [] [] [ text "Download" ] ]
 
 
@@ -98,7 +99,7 @@ exportToDot nodes edges =
             String.join "\n" [ nodeStr, edgeStr ]
 
         dot =
-            String.concat [ "digraph", "{", content, "}" ]
+            String.concat [ "digraph SomeGraph ", "{\n", content, "\n}" ]
     in
         dot
 
@@ -106,8 +107,8 @@ exportToDot nodes edges =
 edgesToDot : List Edge -> String
 edgesToDot edges =
     List.map
-        (\v ->
-            String.concat v.src.idx "->" v.dest.idx
+        (\edge ->
+            String.concat [ "\t", edge.src, "->", edge.dest ]
         )
         edges
         |> String.join "\n"
@@ -116,19 +117,21 @@ edgesToDot edges =
 nodesToDot : List Node -> String
 nodesToDot nodes =
     List.map
-        (\n ->
+        (\node ->
             let
                 label =
-                    n.label
+                    node.label
             in
                 case label of
                     "" ->
-                        n.idx
+                        String.concat [ node.idx ]
 
                     _ ->
-                        String.concat [ n.idx, "[", "label", "=", '"', n.label, '"', "]" ]
+                        String.concat [ node.idx, "[", "label", "=", "\"", node.label, "\"", "]" ]
         )
         nodes
+        |> List.map (\str -> "\t" ++ str)
+        |> String.join "\n"
 
 
 
