@@ -53,6 +53,64 @@ svgCanvas model =
         svg [ width viewWidth, height viewHeight, viewBox viewBoxAttr ] elements
 
 
+arrowHeadToSvg : Edge -> Dict String Node -> Svg msg
+arrowHeadToSvg edge nodes =
+    let
+        dest =
+            Dict.get edge.dest nodes
+
+        head =
+            edge.arrowHead
+    in
+        case dest of
+            Just d ->
+                case head of
+                    Pointed ->
+                        let
+                            pointX =
+                                d.x
+
+                            pointY =
+                                d.y
+
+                            length =
+                                10
+
+                            endX =
+                                pointX - length
+
+                            endY =
+                                pointY - length
+
+                            rotationDeg =
+                                30.0
+
+                            rotationXCoord =
+                                pointX
+
+                            rotationYCoord =
+                                pointY
+
+                            rotationAttr =
+                                String.join " " [ toString rotationDeg, toString rotationXCoord, toString rotationYCoord ]
+                                    |> rotate
+                        in
+                            g []
+                                [ line
+                                    [ toString pointX |> x1
+                                    , toString pointY |> y1
+                                    , toString endX |> x2
+                                    , toString endY |> y2
+                                    , stroke "black"
+                                    , rotationAttr
+                                    ]
+                                    []
+                                ]
+
+            Nothing ->
+                Debug.crash ("Couldn't find node when creating arrowhead")
+
+
 edgeToSvg : Edge -> Dict String Node -> Svg msg
 edgeToSvg edge nodes =
     let
@@ -88,6 +146,9 @@ edgeToSvg edge nodes =
 
                                 labelY =
                                     second midPoint |> toString
+
+                                arrowSvg =
+                                    arrowHeadToSvg edge nodes
                             in
                                 g []
                                     [ line
@@ -99,6 +160,7 @@ edgeToSvg edge nodes =
                                         ]
                                         []
                                     , text_ [ x labelX, y labelY ] [ Svg.Styled.text edge.label ]
+                                    , arrowSvg
                                     ]
 
                         Nothing ->

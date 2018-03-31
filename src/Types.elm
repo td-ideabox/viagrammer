@@ -122,12 +122,17 @@ initialNode =
     }
 
 
+type ArrowHead
+    = Pointed
+
+
 type alias Edge =
     { key : String
     , color : String
     , label : String
     , src : String
     , dest : String
+    , arrowHead : ArrowHead
     }
 
 
@@ -138,6 +143,7 @@ initialEdge =
     , label = ""
     , src = ""
     , dest = ""
+    , arrowHead = Pointed
     }
 
 
