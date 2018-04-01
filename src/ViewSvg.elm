@@ -53,62 +53,85 @@ svgCanvas model =
         svg [ width viewWidth, height viewHeight, viewBox viewBoxAttr ] elements
 
 
-arrowHeadToSvg : Edge -> Dict String Node -> Svg msg
-arrowHeadToSvg edge nodes =
-    let
-        dest =
-            Dict.get edge.dest nodes
+arrowHeadToSvg : ( Float, Float ) -> ( Float, Float ) -> ArrowHead -> Svg msg
+arrowHeadToSvg src dest headKind =
+    case headKind of
+        Pointed ->
+            let
+                sX =
+                    first src
 
-        head =
-            edge.arrowHead
-    in
-        case dest of
-            Just d ->
-                case head of
-                    Pointed ->
-                        let
-                            pointX =
-                                d.x
+                sY =
+                    second src
 
-                            pointY =
-                                d.y
+                dX =
+                    first dest
 
-                            length =
-                                10
+                dY =
+                    second dest
 
-                            endX =
-                                pointX - length
+                length =
+                    10
 
-                            endY =
-                                pointY - length
+                rotationDeg =
+                    30.0
 
-                            rotationDeg =
-                                30.0
+                lineAngle =
+                    Geometry.lineAngle ( sX, sY ) ( dX, dY )
 
-                            rotationXCoord =
-                                pointX
+                l1 =
+                    lineAngle + rotationDeg
 
-                            rotationYCoord =
-                                pointY
+                l2 =
+                    lineAngle - rotationDeg
 
-                            rotationAttr =
-                                String.join " " [ toString rotationDeg, toString rotationXCoord, toString rotationYCoord ]
-                                    |> rotate
-                        in
-                            g []
-                                [ line
-                                    [ toString pointX |> x1
-                                    , toString pointY |> y1
-                                    , toString endX |> x2
-                                    , toString endY |> y2
-                                    , stroke "black"
-                                    , rotationAttr
-                                    ]
-                                    []
-                                ]
+                endX =
+                    cos lineAngle
+                        |> degrees
+                        |> (+) rotationDeg
+                        |> (*) (dX - length)
 
-            Nothing ->
-                Debug.crash ("Couldn't find node when creating arrowhead")
+                endY =
+                    cos lineAngle
+                        |> degrees
+                        |> (-) rotationDeg
+                        |> (*) (dY - length)
+
+                rotationXCoord =
+                    dX
+
+                rotationYCoord =
+                    dY
+
+                rotationAttr =
+                    String.join " " [ toString lineAngle, toString rotationXCoord, toString rotationYCoord ]
+                        |> rotate
+            in
+                g []
+                    [ line
+                        [ toString dX |> x1
+                        , toString dY |> y1
+                        , toString endX |> x2
+                        , toString endY |> y2
+                        , stroke "black"
+
+                        --     , rotationAttr
+                        ]
+                        []
+                    ]
+
+
+markerSvg : String -> String -> Svg msg
+markerSvg startId endId =
+    defs
+        []
+        [ marker [ id startId, markerWidth "8", markerHeight "8", refX "5", refY "5" ]
+            [ circle [ cx "5", cy "5", r "3", Svg.Styled.Attributes.style "stroke: none; fill: #000000;" ] []
+            ]
+        , marker [ id endId, markerWidth "13", markerHeight "13", refX "2", refY "6", orient "auto" ]
+            [ Svg.Styled.path [ d "M2,2 L2,11 L10,6 L2,2", Svg.Styled.Attributes.style "fill: #000000;" ] []
+            ]
+        ]
 
 
 edgeToSvg : Edge -> Dict String Node -> Svg msg
@@ -147,20 +170,27 @@ edgeToSvg edge nodes =
                                 labelY =
                                     second midPoint |> toString
 
-                                arrowSvg =
-                                    arrowHeadToSvg edge nodes
+                                startId =
+                                    String.concat [ "start", edge.key ]
+
+                                endId =
+                                    String.concat [ "end", edge.key ]
+
+                                markers =
+                                    markerSvg startId endId
                             in
                                 g []
-                                    [ line
+                                    [ markers
+                                    , line
                                         [ x1 srcX
                                         , y1 srcY
                                         , x2 destX
                                         , y2 destY
                                         , stroke "black"
+                                        , Svg.Styled.Attributes.style <| String.concat [ "marker-start: url(#", startId, ");", "marker-end: url(#", endId, ");" ]
                                         ]
                                         []
                                     , text_ [ x labelX, y labelY ] [ Svg.Styled.text edge.label ]
-                                    , arrowSvg
                                     ]
 
                         Nothing ->

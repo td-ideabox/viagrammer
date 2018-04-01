@@ -13,3 +13,15 @@ lineMidPoint src dest =
             (second src + second dest) / 2
     in
         ( x, y )
+
+
+lineAngle : ( Float, Float ) -> ( Float, Float ) -> Float
+lineAngle src dest =
+    let
+        dX =
+            first src - first dest
+
+        dY =
+            second src - second dest
+    in
+        atan2 dY dX
