@@ -8,6 +8,7 @@ import Svg.Styled exposing (..)
 import Svg.Styled.Attributes exposing (..)
 import Basics exposing (round)
 import Geometry exposing (..)
+import Physics exposing (distance)
 
 
 -- Functions which deal only with svg go here
@@ -53,74 +54,6 @@ svgCanvas model =
         svg [ width viewWidth, height viewHeight, viewBox viewBoxAttr ] elements
 
 
-arrowHeadToSvg : ( Float, Float ) -> ( Float, Float ) -> ArrowHead -> Svg msg
-arrowHeadToSvg src dest headKind =
-    case headKind of
-        Pointed ->
-            let
-                sX =
-                    first src
-
-                sY =
-                    second src
-
-                dX =
-                    first dest
-
-                dY =
-                    second dest
-
-                length =
-                    10
-
-                rotationDeg =
-                    30.0
-
-                lineAngle =
-                    Geometry.lineAngle ( sX, sY ) ( dX, dY )
-
-                l1 =
-                    lineAngle + rotationDeg
-
-                l2 =
-                    lineAngle - rotationDeg
-
-                endX =
-                    cos lineAngle
-                        |> degrees
-                        |> (+) rotationDeg
-                        |> (*) (dX - length)
-
-                endY =
-                    cos lineAngle
-                        |> degrees
-                        |> (-) rotationDeg
-                        |> (*) (dY - length)
-
-                rotationXCoord =
-                    dX
-
-                rotationYCoord =
-                    dY
-
-                rotationAttr =
-                    String.join " " [ toString lineAngle, toString rotationXCoord, toString rotationYCoord ]
-                        |> rotate
-            in
-                g []
-                    [ line
-                        [ toString dX |> x1
-                        , toString dY |> y1
-                        , toString endX |> x2
-                        , toString endY |> y2
-                        , stroke "black"
-
-                        --     , rotationAttr
-                        ]
-                        []
-                    ]
-
-
 markerSvg : String -> String -> Svg msg
 markerSvg startId endId =
     defs
@@ -149,20 +82,47 @@ edgeToSvg edge nodes =
                     case dest of
                         Just d ->
                             let
+                                srcConnectPoints =
+                                    calcConnectPoints s
+
+                                destConnectPoints =
+                                    calcConnectPoints d
+
+                                connectionPoints =
+                                    findClosestNeighborPoints srcConnectPoints destConnectPoints
+
+                                srcCPoint =
+                                    first connectionPoints
+
+                                destCPoint =
+                                    second connectionPoints
+
+                                sCX =
+                                    first srcCPoint
+
+                                sCY =
+                                    second srcCPoint
+
+                                dCX =
+                                    first destCPoint
+
+                                dCY =
+                                    second destCPoint
+
                                 srcX =
-                                    toString s.x
+                                    toString sCX
 
                                 srcY =
-                                    toString s.y
+                                    toString sCY
 
                                 destX =
-                                    toString d.x
+                                    toString dCX
 
                                 destY =
-                                    toString d.y
+                                    toString dCY
 
                                 midPoint =
-                                    Geometry.lineMidPoint ( s.x, s.y ) ( d.x, d.y )
+                                    Geometry.lineMidPoint ( sCX, sCY ) ( dCX, dCY )
 
                                 labelX =
                                     first midPoint |> toString
@@ -198,6 +158,86 @@ edgeToSvg edge nodes =
 
             Nothing ->
                 Debug.crash "Cant render edge svg cause src node is missing"
+
+
+calcConnectPoints : Node -> List ( Float, Float )
+calcConnectPoints node =
+    let
+        x =
+            node.x
+
+        y =
+            node.y
+
+        width =
+            toFloat node.width
+
+        height =
+            toFloat node.height
+
+        halfWidth =
+            width / 2.0
+
+        halfHeight =
+            height / 2.0
+
+        midTop =
+            ( x + halfWidth, y )
+
+        midBottom =
+            ( x + halfWidth, y + height )
+
+        midLeft =
+            ( x, y + halfHeight )
+
+        midRight =
+            ( x + width, y + halfHeight )
+    in
+        [ midTop, midBottom, midLeft, midRight ]
+
+
+
+{-
+   @TODO Handle case where no minimum exists
+   Given a list of src points and destination points:
+   1. Create a list of all possible pairs by mapping over both lists and concating the results together
+   2. Calculate the distance between those points
+   3. Sort the results by that distance, minimum first
+   4. Return that pair of closest points
+-}
+
+
+findClosestNeighborPoints : List ( Float, Float ) -> List ( Float, Float ) -> ( ( Float, Float ), ( Float, Float ) )
+findClosestNeighborPoints srcPoints destPoints =
+    let
+        allPairs =
+            List.map (\s -> List.map (\d -> ( s, d )) destPoints) srcPoints |> List.concat
+
+        closestPair =
+            List.map
+                (\p ->
+                    let
+                        coord1 =
+                            first p
+
+                        coord2 =
+                            second p
+
+                        dist =
+                            Physics.distance coord1 coord2
+                    in
+                        ( dist, ( coord1, coord2 ) )
+                )
+                allPairs
+                |> List.sortBy (\x -> first x)
+                |> List.head
+    in
+        case closestPair of
+            Just p ->
+                second p
+
+            Nothing ->
+                Debug.crash "No closest pair?"
 
 
 
