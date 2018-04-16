@@ -34,14 +34,14 @@ view model =
                 , svgCanvas model
                 ]
 
-        LabelNode node ->
+        EditNode node ->
             div []
                 [ debugCommand [] [ Html.Styled.text model.currentCommand ]
                 , editNodeView model.viewBox node
                 , svgCanvas model
                 ]
 
-        LabelEdge edge ->
+        EditEdge edge ->
             div []
                 [ debugCommand [] [ Html.Styled.text model.currentCommand ]
                 , editEdgeView model.viewBox edge

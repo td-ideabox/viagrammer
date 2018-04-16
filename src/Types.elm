@@ -53,8 +53,8 @@ getKey keyCode =
 
 type Mode
     = Normal
-    | LabelNode Node
-    | LabelEdge Edge
+    | EditNode Node
+    | EditEdge Edge
 
 
 
@@ -154,7 +154,7 @@ type alias Model =
     , commandAlphabet : List Char
     , indexCounter : Int
     , mode : Mode
-    , errMsg : String
+    , errMsg : Error
     , currentCommand : String
     , windowSize : Window.Size
     , viewBox : ViewBox
@@ -176,3 +176,11 @@ model =
     , viewBox = initialViewBox
     , rng = ( 1, 1 ) -- Use fib sequence to generate rng values
     }
+
+
+
+-- Errors
+
+
+type alias Error =
+    String
