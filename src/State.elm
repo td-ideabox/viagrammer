@@ -147,6 +147,9 @@ executeNormalCommand model =
     let
         isEditCommand =
             String.startsWith "e" model.currentCommand
+
+        isRemoveCommand =
+            String.startsWith "r" model.currentCommand
     in
         if isEditCommand then
             let
@@ -159,6 +162,8 @@ executeNormalCommand model =
 
                     Err msg ->
                         { model | errMsg = msg, currentCommand = "" }
+        else if isRemoveCommand then
+            executeRemoveCommand model
         else
             let
                 --- Are we creating an edge?
@@ -253,6 +258,21 @@ executeInsertEdgeCommand srcDestIdx nodes edges =
 
             Nothing ->
                 Err "source node doesn't exist"
+
+
+executeRemoveCommand : Model -> Model
+executeRemoveCommand model =
+    let
+        removeElementIdx =
+            String.dropLeft 1 model.currentCommand
+
+        updatedNodes =
+            Dict.remove removeElementIdx model.nodes
+
+        updatedEdges =
+            Dict.remove removeElementIdx model.edges
+    in
+        { model | nodes = updatedNodes, edges = updatedEdges, currentCommand = "" }
 
 
 executeEditCommand : Model -> Result Error Model
