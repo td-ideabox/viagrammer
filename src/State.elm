@@ -149,7 +149,7 @@ executeNormalCommand model =
             String.startsWith "e" model.currentCommand
 
         isRemoveCommand =
-            String.startsWith "r" model.currentCommand
+            String.startsWith "d" model.currentCommand
     in
         if isEditCommand then
             let
