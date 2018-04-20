@@ -1,0 +1,10 @@
+# elm-package generated files
+elm-stuff
+# elm-repl generated files
+repl-temp-*
+# elm generated code
+elm.js
+#Intellij
+.idea
+viagrammer.iml
+yarn-error.log
