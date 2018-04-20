@@ -1,2 +1,2 @@
 #!/bin/bash
-elm-app build && firebase deploy
+yarn build && firebase deploy

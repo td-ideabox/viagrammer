@@ -88,7 +88,9 @@ module.exports = {
     // https://github.com/facebookincubator/create-react-app/issues/290
     // `web` extension prefixes have been added for better support
     // for React Native Web.
-    extensions: ['.web.js', '.mjs', '.js', '.json', '.web.jsx', '.jsx'],
+    //
+    // For Elm stuff, follow this tutorial for config mods: https://codeburst.io/using-elm-in-react-from-the-ground-up-e3866bb0369d
+    extensions: ['.web.js', '.mjs', '.js', '.json', '.web.jsx', '.jsx', '.elm'],
     alias: {
       
       // Support React Native Web
@@ -216,7 +218,7 @@ module.exports = {
           {
             test: /\.elm$/,
             exclude: [/elm-stuff/, /node_modules/],
-            loader: 'elm-webpack'
+            loader: require.resolve('elm-webpack-loader')
           },
           // "file" loader makes sure assets end up in the `build` folder.
           // When you `import` an asset, you get its filename.
@@ -228,7 +230,7 @@ module.exports = {
             // it's runtime that would otherwise processed through "file" loader.
             // Also exclude `html` and `json` extensions so they get processed
             // by webpacks internal loaders.
-            exclude: [/\.(js|jsx|mjs)$/, /\.html$/, /\.json$/],
+            exclude: [/\.(js|jsx|mjs)$/, /\.html$/, /\.json$/, /\.elm$/],
             options: {
               name: 'static/media/[name].[hash:8].[ext]',
             },
