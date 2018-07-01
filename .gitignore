@@ -30,3 +30,6 @@ elm.js
 .idea
 viagrammer.iml
 yarn-error.log
+
+#VS Code
+.vscode
