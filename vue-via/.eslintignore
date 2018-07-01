@@ -1,0 +1,12 @@
+/
+/build/
+/config/
+/dist/
+/*.js
+/test/unit/coverage/
+/*.elm
+/elm-stuff/
+elm-package.json
+/src/elm-stuff/
+/src/elm/
+/src/elm-package.json
