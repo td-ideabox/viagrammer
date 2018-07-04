@@ -10,7 +10,7 @@ import Types exposing (..)
 import Dict exposing (..)
 import Physics exposing (distance)
 import Http exposing (..)
-
+import State exposing (exportToDot)
 
 -- Functions which deal only in Html go here.
 
@@ -63,10 +63,7 @@ editElementView currentViewBox elementLabel onInputCallback =
                 ]
             ]
 
-
-
 -- Export
-
 
 downloadExportButton : Model -> Html Msg
 downloadExportButton model =
@@ -85,62 +82,6 @@ downloadExportButton model =
             [ type_ "button", href <| "data:text/plain;charset=utf-8," ++ encodeUri dot, downloadAs "graph.dot" ]
             [ styled button [] [] [ text "Download" ] ]
 
-
-exportToDot : List Node -> List Edge -> String
-exportToDot nodes edges =
-    let
-        nodeStr =
-            nodesToDot nodes
-
-        edgeStr =
-            edgesToDot edges
-
-        content =
-            String.join "\n" [ nodeStr, edgeStr ]
-
-        dot =
-            String.concat [ "digraph SomeGraph ", "{\n", content, "\n}" ]
-    in
-        dot
-
-
-edgesToDot : List Edge -> String
-edgesToDot edges =
-    List.map
-        (\edge ->
-            case edge.label of
-                "" ->
-                    { edge | label = edge.key }
-
-                _ ->
-                    edge
-        )
-        edges
-        |> List.map
-            (\edge ->
-                String.concat [ "\t", edge.src, "->", edge.dest, "[label=\"", edge.label, "\"]" ]
-            )
-        |> String.join "\n"
-
-
-nodesToDot : List Node -> String
-nodesToDot nodes =
-    List.map
-        (\node ->
-            let
-                label =
-                    node.label
-            in
-                case label of
-                    "" ->
-                        String.concat [ node.idx ]
-
-                    _ ->
-                        String.concat [ node.idx, "[label=\"", node.label, "\"]" ]
-        )
-        nodes
-        |> List.map (\str -> "\t" ++ str)
-        |> String.join "\n"
 
 
 
