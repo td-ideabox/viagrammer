@@ -1,6 +1,6 @@
 <template>
   <div>
-    <ViagrammerElm></ViagrammerElm>
+    <ViagrammerElm :ports="setupPorts"></ViagrammerElm>
   </div>
 </template>
 
@@ -19,6 +19,12 @@ export default {
       }).catch(err => {
         this.vizJson = err
       })
+    },
+    setupPorts: function(ports) {
+      ports.sendDot.subscribe(function(message) {
+        console.log(message)
+      })
+      this.ports = ports
     }
   },
   components: {

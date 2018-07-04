@@ -15,7 +15,7 @@ import Rng exposing (next)
 import Types exposing (..)
 import Geometry exposing (..)
 import Result exposing (..)
-
+import Ports exposing(..)
 
 init : ( Model, Cmd Msg )
 init =
@@ -39,7 +39,7 @@ update msg model =
             )
 
         KeyDown key ->
-            ( applyKey 1 key model, Cmd.none )
+             applyKey 1 key model
 
         KeyUp key ->
             ( model, Cmd.none )
@@ -366,7 +366,7 @@ buildCommand keyCode model =
             model
 
 
-applyKey : Int -> Keyboard.KeyCode -> Model -> Model
+applyKey : Int -> Keyboard.KeyCode -> Model -> (Model, Cmd Msg)
 applyKey scale keyCode model =
     let
         key =
@@ -376,29 +376,29 @@ applyKey scale keyCode model =
             Normal ->
                 case key of
                     Ilwr ->
-                        insertNode model
+                        (insertNode model, sendDot "some string")
 
                     Return ->
-                        executeNormalCommand model
+                        (executeNormalCommand model, Cmd.none)
 
                     _ ->
-                        buildCommand keyCode model
+                        (buildCommand keyCode model, Cmd.none)
 
             EditNode node ->
                 case key of
                     Escape ->
-                        { model | mode = Normal }
+                        ({ model | mode = Normal }, Cmd.none)
 
                     _ ->
-                        model
+                        (model, Cmd.none)
 
             EditEdge edge ->
                 case key of
                     Escape ->
-                        { model | mode = Normal }
+                        ({ model | mode = Normal }, Cmd.none)
 
                     _ ->
-                        model
+                        (model, Cmd.none)
 
 
 setViewBoxFocus : ViewBox -> ( Float, Float ) -> ViewBox
