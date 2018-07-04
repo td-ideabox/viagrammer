@@ -18,12 +18,5 @@ main =
         { view = View.view >> Html.Styled.toUnstyled
         , init = State.init
         , update = State.update
-        , subscriptions =
-            \model ->
-                Sub.batch
-                    [ Keyboard.downs KeyDown
-                    , Keyboard.ups KeyUp
-                    , AnimationFrame.diffs Frame
-                    , Window.resizes WindowSize
-                    ]
+        , subscriptions = State.subscriptions
         }

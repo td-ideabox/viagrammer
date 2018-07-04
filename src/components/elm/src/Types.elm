@@ -18,6 +18,8 @@ type Msg
     | WindowSize Window.Size
     | EditNodeMsg Node String
     | EditEdgeMsg Edge String
+    | UpdateLayout String
+
 
 
 type Key
@@ -176,6 +178,23 @@ model =
     , viewBox = initialViewBox
     , rng = ( 1, 1 ) -- Use fib sequence to generate rng values
     }
+
+
+-- Dot Datums from lib
+type alias EdgeData = {
+    tailIdx: Int,
+    headIdx: Int
+}
+
+type alias ObjectData = {
+    name: String
+}
+
+type alias GraphData = {
+    edges: List EdgeData,
+    objects: List ObjectData
+}
+
 
 
 

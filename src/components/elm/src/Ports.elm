@@ -1,5 +1,5 @@
-port module Ports exposing (sendDot)
+port module Ports exposing (sendDot, layoutData)
 
 port sendDot: String -> Cmd msg
 
-port receiveLayoutData: (String -> msg) -> Sub msg
+port layoutData: (String -> msg) -> Sub msg

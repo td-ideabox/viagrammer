@@ -21,7 +21,16 @@ init : ( Model, Cmd Msg )
 init =
     ( model, Window.size |> Task.perform WindowSize )
 
-
+---- SUBSCRIPTIONS -----
+subscriptions : Model -> Sub Msg
+subscriptions model =
+                Sub.batch
+                    [ Keyboard.downs KeyDown
+                    , Keyboard.ups KeyUp
+                    , AnimationFrame.diffs Frame
+                    , Window.resizes WindowSize
+                    , layoutData UpdateLayout
+                    ]
 
 ---- UPDATE ----
 
@@ -37,6 +46,8 @@ update msg model =
               }
             , Cmd.none
             )
+        UpdateLayout str -> 
+            Debug.log str (model, Cmd.none)
 
         KeyDown key ->
              applyKey 1 key model
