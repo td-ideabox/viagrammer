@@ -15,22 +15,51 @@ import Rng exposing (next)
 import Types exposing (..)
 import Geometry exposing (..)
 import Result exposing (..)
-import Ports exposing(..)
+import Ports exposing (..)
+import Json.Decode exposing (..)
+import Json.Decode.Pipeline exposing (..)
+
 
 init : ( Model, Cmd Msg )
 init =
     ( model, Window.size |> Task.perform WindowSize )
 
+
+
 ---- SUBSCRIPTIONS -----
+
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
-                Sub.batch
-                    [ Keyboard.downs KeyDown
-                    , Keyboard.ups KeyUp
-                    , AnimationFrame.diffs Frame
-                    , Window.resizes WindowSize
-                    , layoutData UpdateLayout
-                    ]
+    Sub.batch
+        [ Keyboard.downs KeyDown
+        , Keyboard.ups KeyUp
+        , AnimationFrame.diffs Frame
+        , Window.resizes WindowSize
+        , layoutData UpdateLayout
+        ]
+
+
+edgeDecoder : Decoder EdgeData
+edgeDecoder =
+    decode EdgeData
+        |> required "tail" int
+        |> required "head" int
+
+
+objectDecoder : Decoder ObjectData
+objectDecoder =
+    decode ObjectData
+        |> required "name" string
+
+
+graphDecoder : Decoder GraphData
+graphDecoder =
+    decode GraphData
+        |> optional "edges" (list edgeDecoder) []
+        |> optional "objects" (list objectDecoder) []
+
+
 
 ---- UPDATE ----
 
@@ -46,11 +75,21 @@ update msg model =
               }
             , Cmd.none
             )
-        UpdateLayout str -> 
-            Debug.log str (model, Cmd.none)
+
+        UpdateLayout str ->
+            let
+                layoutResult =
+                    decodeString graphDecoder str
+            in
+                case layoutResult of
+                    Ok layout ->
+                        ( { model | layoutData = Just layout }, Cmd.none )
+
+                    Err _ ->
+                        ( { model | errMsg = "Couldn't decode " ++ str }, Cmd.none )
 
         KeyDown key ->
-             applyKey 1 key model
+            applyKey 1 key model
 
         KeyUp key ->
             ( model, Cmd.none )
@@ -377,7 +416,7 @@ buildCommand keyCode model =
             model
 
 
-applyKey : Int -> Keyboard.KeyCode -> Model -> (Model, Cmd Msg)
+applyKey : Int -> Keyboard.KeyCode -> Model -> ( Model, Cmd Msg )
 applyKey scale keyCode model =
     let
         key =
@@ -388,34 +427,38 @@ applyKey scale keyCode model =
                 case key of
                     Ilwr ->
                         let
-                            nodes = Dict.values model.nodes
-                            edges = Dict.values model.edges
-                            dot = exportToDot nodes edges
+                            nodes =
+                                Dict.values model.nodes
+
+                            edges =
+                                Dict.values model.edges
+
+                            dot =
+                                exportToDot nodes edges
                         in
-                        
-                            (insertNode model, sendDot dot)
+                            ( insertNode model, sendDot dot )
 
                     Return ->
-                        (executeNormalCommand model, Cmd.none)
+                        ( executeNormalCommand model, Cmd.none )
 
                     _ ->
-                        (buildCommand keyCode model, Cmd.none)
+                        ( buildCommand keyCode model, Cmd.none )
 
             EditNode node ->
                 case key of
                     Escape ->
-                        ({ model | mode = Normal }, Cmd.none)
+                        ( { model | mode = Normal }, Cmd.none )
 
                     _ ->
-                        (model, Cmd.none)
+                        ( model, Cmd.none )
 
             EditEdge edge ->
                 case key of
                     Escape ->
-                        ({ model | mode = Normal }, Cmd.none)
+                        ( { model | mode = Normal }, Cmd.none )
 
                     _ ->
-                        (model, Cmd.none)
+                        ( model, Cmd.none )
 
 
 setViewBoxFocus : ViewBox -> ( Float, Float ) -> ViewBox
@@ -603,9 +646,6 @@ applyPhysics dt nodes edges node =
     in
         --- Calculate force to apply based on distance and direction
         { node | x = node.x + vx * dt, y = node.y + vy * dt }
-
-
-
 
 
 exportToDot : List Node -> List Edge -> String

@@ -2,7 +2,7 @@
   <div>
     <button v-on:click="vizJson">vizify</button>
     <ViagrammerElm :ports="setupPorts"></ViagrammerElm>
-  
+
   </div>
 
 </template>
@@ -15,18 +15,20 @@ export default {
   name: 'Viagrammer',
   methods: {
     vizJson: (dot, sendData) => {
-      var that = this; 
+      var that = this;
+      console.log(dot)
       let v = new Viz( {Module, render});
       v.renderJSONObject(dot).then(result => {
         if(result) {
-          sendData(JSON.stringify(result))  
+          console.log(result)
+          sendData(JSON.stringify(result))
         }
       }).catch(err => {
-        console.log(err) 
+        console.log(err)
       })
     },
     setupPorts: function(ports) {
-      var that = this; 
+      var that = this;
       ports.sendDot.subscribe(function(message) {
          let d = that.vizJson(message, (data) => {ports.layoutData.send(data)})
       })

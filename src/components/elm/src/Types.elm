@@ -1,5 +1,6 @@
 module Types exposing (..)
 
+import Json.Decode.Pipeline exposing (..)
 import AnimationFrame exposing (..)
 import Array exposing (..)
 import Char exposing (..)
@@ -9,6 +10,7 @@ import Keyboard exposing (..)
 import Task
 import Time exposing (Time)
 import Window
+import Json.Decode exposing (..)
 
 
 type Msg
@@ -19,7 +21,6 @@ type Msg
     | EditNodeMsg Node String
     | EditEdgeMsg Edge String
     | UpdateLayout String
-
 
 
 type Key
@@ -161,6 +162,7 @@ type alias Model =
     , windowSize : Window.Size
     , viewBox : ViewBox
     , rng : ( Int, Int )
+    , layoutData : Maybe GraphData
     }
 
 
@@ -177,24 +179,45 @@ model =
     , windowSize = { width = 0, height = 0 }
     , viewBox = initialViewBox
     , rng = ( 1, 1 ) -- Use fib sequence to generate rng values
+    , layoutData = Nothing
     }
 
 
--- Dot Datums from lib
-type alias EdgeData = {
-    tailIdx: Int,
-    headIdx: Int
-}
+type alias EdgeData =
+    { tail : Int
+    , head : Int
+    }
 
-type alias ObjectData = {
-    name: String
-}
 
-type alias GraphData = {
-    edges: List EdgeData,
-    objects: List ObjectData
-}
+edgeDecoder : Decoder EdgeData
+edgeDecoder =
+    decode EdgeData
+        |> required "tail" int
+        |> required "head" int
 
+
+type alias ObjectData =
+    { name : String
+    }
+
+
+objectDecoder : Decoder ObjectData
+objectDecoder =
+    decode ObjectData
+        |> required "name" string
+
+
+type alias GraphData =
+    { edges : List EdgeData
+    , objects : List ObjectData
+    }
+
+
+graphDecoder : Decoder GraphData
+graphDecoder =
+    decode GraphData
+        |> required "edges" (list edgeDecoder)
+        |> required "objects" (list objectDecoder)
 
 
 
