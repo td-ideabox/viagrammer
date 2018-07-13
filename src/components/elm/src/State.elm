@@ -51,6 +51,7 @@ objectDecoder : Decoder ObjectData
 objectDecoder =
     decode ObjectData
         |> required "name" string
+        |> required "pos" string
 
 
 graphDecoder : Decoder GraphData
@@ -83,7 +84,25 @@ update msg model =
             in
                 case layoutResult of
                     Ok layout ->
-                        ( { model | layoutData = Just layout }, Cmd.none )
+                        let
+                            anchoredNodes =
+                                List.map
+                                    (\o ->
+                                        let
+                                            n =
+                                                Dict.get o.name model.nodes
+                                        in
+                                            case n of
+                                                Just n ->
+                                                    ( o.name, updateNodeWithObjectData o n )
+
+                                                Nothing ->
+                                                    Debug.crash ("Blah " ++ o.name)
+                                    )
+                                    layout.objects
+                                    |> Dict.fromList
+                        in
+                            ( { model | nodes = Dict.union anchoredNodes model.nodes }, Cmd.none )
 
                     Err _ ->
                         ( { model | errMsg = "Couldn't decode " ++ str }, Cmd.none )

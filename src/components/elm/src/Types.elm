@@ -1,6 +1,5 @@
 module Types exposing (..)
 
-import Json.Decode.Pipeline exposing (..)
 import AnimationFrame exposing (..)
 import Array exposing (..)
 import Char exposing (..)
@@ -95,6 +94,7 @@ type alias Node =
     { idx : String
     , color : String
     , x : Float
+    , anchorCoord : Maybe ( Float, Float )
     , y : Float
     , ignoreForces : Bool
     , width : Int
@@ -115,6 +115,7 @@ initialNode =
     { idx = "unassigned"
     , x = 0
     , y = 0
+    , anchorCoord = Nothing
     , ignoreForces = False
     , label = ""
     , color = "#f00"
@@ -123,6 +124,41 @@ initialNode =
     , roundX = 15
     , roundY = 15
     }
+
+
+
+-- http://package.elm-lang.org/packages/elm-community/result-extra/2.2.0/Result-Extra
+
+
+combineResult : List (Result x a) -> Result x (List a)
+combineResult =
+    List.foldr (Result.map2 (::)) (Ok [])
+
+
+updateNodeWithObjectData : ObjectData -> Node -> Node
+updateNodeWithObjectData objectData node =
+    let
+        coordsResults =
+            String.split "," objectData.pos
+                |> List.map (\coordStr -> String.toFloat coordStr)
+                |> combineResult
+    in
+        case coordsResults of
+            Ok coordRes ->
+                case coordRes of
+                    [ x, y ] ->
+                        { node | anchorCoord = Just ( x, y ) }
+
+                    _ ->
+                        Debug.crash ("Failed to parse " ++ objectData.pos)
+
+            Err err ->
+                Debug.crash (err)
+
+
+setNodeAnchor : ( Float, Float ) -> Node -> Node
+setNodeAnchor anchor node =
+    { node | anchorCoord = Just anchor }
 
 
 type ArrowHead
@@ -189,35 +225,16 @@ type alias EdgeData =
     }
 
 
-edgeDecoder : Decoder EdgeData
-edgeDecoder =
-    decode EdgeData
-        |> required "tail" int
-        |> required "head" int
-
-
 type alias ObjectData =
     { name : String
+    , pos : String
     }
-
-
-objectDecoder : Decoder ObjectData
-objectDecoder =
-    decode ObjectData
-        |> required "name" string
 
 
 type alias GraphData =
     { edges : List EdgeData
     , objects : List ObjectData
     }
-
-
-graphDecoder : Decoder GraphData
-graphDecoder =
-    decode GraphData
-        |> required "edges" (list edgeDecoder)
-        |> required "objects" (list objectDecoder)
 
 
 

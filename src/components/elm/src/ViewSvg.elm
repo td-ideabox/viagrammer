@@ -280,6 +280,10 @@ nodeToSvg node =
         debugCoordY =
             toString (node.y + 60)
 
+        debugAnchor =
+            Maybe.map (\( x, y ) -> (toString x) ++ " -- " ++ (toString y)) node.anchorCoord
+                |> Maybe.withDefault ""
+
         debugCoord =
             toString (Basics.round node.x) ++ ", " ++ toString (round node.y)
 
@@ -308,6 +312,6 @@ nodeToSvg node =
                 ]
                 []
             , text_ [ x idxX, y idxY ] [ Svg.Styled.text node.idx ]
-            , text_ [ x debugCoordX, y debugCoordY ] [ Svg.Styled.text debugCoord ]
+            , text_ [ x debugCoordX, y debugCoordY ] [ Svg.Styled.text debugAnchor ]
             , text_ [ x labelX, y labelY ] [ Svg.Styled.text node.label ]
             ]
