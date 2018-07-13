@@ -560,7 +560,12 @@ updateNodes : Float -> Dict String Node -> Dict String Edge -> Dict String Node
 updateNodes dt nodes edges =
     Dict.map
         (\k v ->
-            applyPhysics dt nodes edges v
+            case v.anchorCoord of
+                Just anchorCoord ->
+                    { v | x = Tuple.first anchorCoord, y = Tuple.second anchorCoord }
+
+                Nothing ->
+                    applyPhysics dt nodes edges v
         )
         nodes
 
