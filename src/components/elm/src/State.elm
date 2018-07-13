@@ -560,12 +560,7 @@ updateNodes : Float -> Dict String Node -> Dict String Edge -> Dict String Node
 updateNodes dt nodes edges =
     Dict.map
         (\k v ->
-            case v.anchorCoord of
-                Just anchorCoord ->
-                    { v | x = Tuple.first anchorCoord, y = Tuple.second anchorCoord }
-
-                Nothing ->
-                    applyPhysics dt nodes edges v
+            applyPhysics dt nodes edges v
         )
         nodes
 
@@ -577,40 +572,64 @@ updateNodes dt nodes edges =
 calcForcesOnNode : Node -> Dict String Node -> Dict String Edge -> List ( Float, Float )
 calcForcesOnNode node nodes edges =
     let
-        nodeList =
+        anchorAttraction =
+            case node.anchorCoord of
+                Just anchor ->
+                    let
+                        p1 =
+                            ( node.x, node.y )
+
+                        p2 =
+                            anchor
+
+                        dist =
+                            distance p1 p2
+
+                        dir =
+                            direction p1 p2
+
+                        minRadius =
+                            100
+                    in
+                        if dist < minRadius || node.ignoreForces then
+                            ( 0, 0 )
+                        else
+                            attract dist dir minRadius
+
+                Nothing ->
+                    ( 0, 0 )
+
+        nodeRepulses =
             Dict.values nodes
+                |> List.map
+                    (\n ->
+                        let
+                            p1 =
+                                ( node.x, node.y )
 
-        nodeEdges =
+                            p2 =
+                                ( n.x, n.y )
+
+                            dist =
+                                distance p1 p2
+
+                            dir =
+                                direction p1 p2
+
+                            minRadius =
+                                100
+                        in
+                            --- Don't apply a force to yourself or if you outside the
+                            --- affected radius
+                            if n.idx == node.idx || dist > minRadius || node.ignoreForces then
+                                ( 0, 0 )
+                            else
+                                repulse dist dir minRadius
+                    )
+
+        edgeAttractions =
             List.filter (\e -> e.src == node.idx) (Dict.values edges)
-    in
-        List.map
-            (\n ->
-                let
-                    p1 =
-                        ( node.x, node.y )
-
-                    p2 =
-                        ( n.x, n.y )
-
-                    dist =
-                        distance p1 p2
-
-                    dir =
-                        direction p1 p2
-
-                    minRadius =
-                        100
-                in
-                    --- Don't apply a force to yourself or if you outside the
-                    --- affected radius
-                    if n.idx == node.idx || dist > minRadius || node.ignoreForces then
-                        ( 0, 0 )
-                    else
-                        repulse dist dir minRadius
-            )
-            nodeList
-            |> List.append
-                (List.map
+                |> List.map
                     (\e ->
                         let
                             src =
@@ -649,8 +668,13 @@ calcForcesOnNode node nodes edges =
                             else
                                 attract dist dir minRadius
                     )
-                    nodeEdges
-                )
+    in
+        case node.anchorCoord of
+            Just anchor ->
+                List.append nodeRepulses [ anchorAttraction ]
+
+            Nothing ->
+                List.append nodeRepulses edgeAttractions
 
 
 applyPhysics : Float -> Dict String Node -> Dict String Edge -> Node -> Node
