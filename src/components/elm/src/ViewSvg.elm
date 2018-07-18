@@ -19,20 +19,18 @@ import ExportDot exposing (..)
 svgCanvas : Model -> Svg msg
 svgCanvas model =
     let
-        winWidth =
-            toFloat model.windowSize.width
-
-        winHeight =
-            toFloat model.windowSize.height
+        ( winWidth, winHeight ) =
+            ( toFloat model.windowSize.width
+            , toFloat model.windowSize.height
+            )
 
         zoom =
             model.viewBox.zoom
 
-        viewWidth =
-            winWidth * zoom |> toString
-
-        viewHeight =
-            winHeight * zoom |> toString
+        ( viewWidth, viewHeight ) =
+            ( winWidth * zoom |> toString
+            , winHeight * zoom |> toString
+            )
 
         nodesSvg =
             Dict.map (\k v -> nodeToSvg v) model.nodes |> Dict.values
@@ -43,11 +41,10 @@ svgCanvas model =
         elements =
             List.append nodesSvg edgesSvg
 
-        viewX =
-            model.viewBox.x |> toString
-
-        viewY =
-            model.viewBox.y |> toString
+        ( viewX, viewY ) =
+            ( model.viewBox.x |> toString
+            , model.viewBox.y |> toString
+            )
 
         viewBoxAttr =
             String.join " " [ viewX, viewY, viewWidth, viewHeight ]
@@ -83,53 +80,34 @@ edgeToSvg edge nodes =
                     case dest of
                         Just d ->
                             let
-                                srcConnectPoints =
-                                    calcConnectPoints s
-
-                                destConnectPoints =
-                                    calcConnectPoints d
+                                ( srcConnectPoints, destConnectPoints ) =
+                                    ( calcConnectPoints s
+                                    , calcConnectPoints d
+                                    )
 
                                 connectionPoints =
                                     findClosestNeighborPoints srcConnectPoints destConnectPoints
 
-                                srcCPoint =
-                                    first connectionPoints
+                                ( srcCPoint, destCPoint ) =
+                                    connectionPoints
 
-                                destCPoint =
-                                    second connectionPoints
+                                ( sCX, sCY ) =
+                                    srcCPoint
 
-                                sCX =
-                                    first srcCPoint
+                                ( dCX, dCY ) =
+                                    destCPoint
 
-                                sCY =
-                                    second srcCPoint
+                                ( srcX, srcY ) =
+                                    ( toString sCX, toString sCY )
 
-                                dCX =
-                                    first destCPoint
+                                ( destX, destY ) =
+                                    ( toString dCX, toString dCY )
 
-                                dCY =
-                                    second destCPoint
-
-                                srcX =
-                                    toString sCX
-
-                                srcY =
-                                    toString sCY
-
-                                destX =
-                                    toString dCX
-
-                                destY =
-                                    toString dCY
-
-                                midPoint =
+                                ( midX, midY ) =
                                     Geometry.lineMidPoint ( sCX, sCY ) ( dCX, dCY )
 
-                                labelX =
-                                    first midPoint |> toString
-
-                                labelY =
-                                    second midPoint |> toString
+                                ( labelX, labelY ) =
+                                    ( toString midX, toString midY )
 
                                 startId =
                                     String.concat [ "start", edge.key ]
@@ -164,39 +142,35 @@ edgeToSvg edge nodes =
 calcConnectPoints : Node -> List ( Float, Float )
 calcConnectPoints node =
     let
-        x =
-            Tuple.first node.position
+        ( x, y ) =
+            node.position
 
-        y =
-            Tuple.second node.position
+        convertToPixels =
+            \a -> inchesToPixels a |> toFloat
 
-        width =
-            Tuple.first node.diminsions
-                |> inchesToPixels
-                |> toFloat
+        ( width, height ) =
+            node.diminsions
 
-        height =
-            Tuple.second node.diminsions
-                |> inchesToPixels
-                |> toFloat
+        ( widthPx, heightPx ) =
+            ( convertToPixels width, convertToPixels height )
 
         halfWidth =
-            width / 2.0
+            widthPx / 2.0
 
         halfHeight =
-            height / 2.0
+            heightPx / 2.0
 
         midTop =
             ( x + halfWidth, y )
 
         midBottom =
-            ( x + halfWidth, y + height )
+            ( x + halfWidth, y + heightPx )
 
         midLeft =
             ( x, y + halfHeight )
 
         midRight =
-            ( x + width, y + halfHeight )
+            ( x + widthPx, y + halfHeight )
     in
         [ midTop, midBottom, midLeft, midRight ]
 
