@@ -58,34 +58,26 @@ update msg model =
             )
 
         UpdateLayout str ->
-            let
-                layoutResult =
-                    decodeString graphDecoder str
-            in
-                case layoutResult of
-                    Ok layout ->
-                        let
-                            anchoredNodes =
-                                List.map
-                                    (\o ->
-                                        let
-                                            n =
-                                                Dict.get o.name model.nodes
-                                        in
-                                            case n of
-                                                Just n ->
-                                                    ( o.name, updateNodeWithObjectData o n )
+            case decodeString graphDecoder str of
+                Ok layout ->
+                    let
+                        anchoredNodes =
+                            List.map
+                                (\o ->
+                                    case Dict.get o.name model.nodes of
+                                        Just n ->
+                                            ( o.name, updateNodeWithObjectData o n )
 
-                                                Nothing ->
-                                                    Debug.crash ("Blah " ++ o.name)
-                                    )
-                                    layout.objects
-                                    |> Dict.fromList
-                        in
-                            ( { model | nodes = Dict.union anchoredNodes model.nodes }, Cmd.none )
+                                        Nothing ->
+                                            Debug.crash ("Blah " ++ o.name)
+                                )
+                                layout.objects
+                                |> Dict.fromList
+                    in
+                        ( { model | nodes = Dict.union anchoredNodes model.nodes }, Cmd.none )
 
-                    Err _ ->
-                        ( { model | errMsg = "Couldn't decode " ++ str }, Cmd.none )
+                Err _ ->
+                    ( { model | errMsg = "Couldn't decode " ++ str }, Cmd.none )
 
         KeyDown key ->
             applyKey 1 key model
@@ -355,43 +347,31 @@ executeEditNodeCommand elementIdx model =
 
 executeEditEdgeCommand : String -> Model -> Result Error Model
 executeEditEdgeCommand elementIdx model =
-    let
-        targetEdge =
-            Dict.get elementIdx model.edges
-    in
-        case targetEdge of
-            Just e ->
-                let
-                    srcNode =
-                        Dict.get e.src model.nodes
-                in
-                    case srcNode of
-                        Just n1 ->
+    case Dict.get elementIdx model.edges of
+        Just edge ->
+            case Dict.get edge.src model.nodes of
+                Just sourceNode ->
+                    case Dict.get edge.dest model.nodes of
+                        Just destNode ->
                             let
-                                destNode =
-                                    Dict.get e.dest model.nodes
+                                midPoint =
+                                    lineMidPoint sourceNode.position destNode.position
                             in
-                                case destNode of
-                                    Just n2 ->
-                                        let
-                                            midPoint =
-                                                lineMidPoint n1.position n2.position
-                                        in
-                                            Ok
-                                                { model
-                                                    | viewBox = focusViewBox ( first midPoint, second midPoint ) model.windowSize model.viewBox
-                                                    , currentCommand = ""
-                                                    , mode = (EditEdge e)
-                                                }
-
-                                    Nothing ->
-                                        Err ("Couldn't find destNode " ++ e.dest ++ " of edge " ++ e.key)
+                                Ok
+                                    { model
+                                        | viewBox = focusViewBox midPoint model.windowSize model.viewBox
+                                        , currentCommand = ""
+                                        , mode = (EditEdge edge)
+                                    }
 
                         Nothing ->
-                            Err ("Couldn't find srcNode " ++ e.src ++ " of edge " ++ e.key)
+                            Err ("Couldn't find destNode " ++ edge.dest ++ " of edge " ++ edge.key)
 
-            Nothing ->
-                Err ("Edge " ++ elementIdx ++ " doesn't appear to exist")
+                Nothing ->
+                    Err ("Couldn't find srcNode " ++ edge.src ++ " of edge " ++ edge.key)
+
+        Nothing ->
+            Err ("Edge " ++ elementIdx ++ " doesn't appear to exist")
 
 
 buildCommand : Keyboard.KeyCode -> Model -> Model
@@ -414,7 +394,7 @@ applyKey scale keyCode model =
     in
         case model.mode of
             Normal ->
-                case key of
+                case getKey keyCode of
                     Ilwr ->
                         let
                             nodes =
@@ -636,15 +616,15 @@ calcForcesOnNode node nodes edges =
 calcNodeRepulseRadius : Node -> Float
 calcNodeRepulseRadius node =
     let
-        halfWidth =
-            Tuple.first node.diminsions
-                |> inchesToPixels
-                |> toFloat
+        ( widthInches, heightInches ) =
+            node.diminsions
 
-        halfHeight =
-            Tuple.second node.diminsions
-                |> inchesToPixels
+        ( halfWidth, halfHeight ) =
+            ( inchesToPixels widthInches
                 |> toFloat
+            , inchesToPixels heightInches
+                |> toFloat
+            )
 
         hypot =
             (halfWidth ^ 2) + (halfHeight ^ 2) |> sqrt

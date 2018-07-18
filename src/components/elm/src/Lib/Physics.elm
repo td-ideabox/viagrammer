@@ -8,39 +8,13 @@ import Tuple exposing (first, second)
 
 
 distance : ( Float, Float ) -> ( Float, Float ) -> Float
-distance p1 p2 =
-    let
-        x1 =
-            first p1
-
-        y1 =
-            second p1
-
-        x2 =
-            first p2
-
-        y2 =
-            second p2
-    in
-        sqrt ((x2 - x1) ^ 2 + (y2 - y1) ^ 2)
+distance ( x1, y1 ) ( x2, y2 ) =
+    sqrt ((x2 - x1) ^ 2 + (y2 - y1) ^ 2)
 
 
 direction : ( Float, Float ) -> ( Float, Float ) -> Float
-direction p1 p2 =
-    let
-        x1 =
-            first p1
-
-        y1 =
-            second p1
-
-        x2 =
-            first p2
-
-        y2 =
-            second p2
-    in
-        atan2 (y2 - y1) (x2 - x1)
+direction ( x1, y1 ) ( x2, y2 ) =
+    atan2 (y2 - y1) (x2 - x1)
 
 
 repulse : Float -> Float -> Float -> ( Float, Float )
@@ -63,18 +37,17 @@ repulse dist dirTowards radius =
 
 
 moveTowards : ( Float, Float ) -> Float -> Float -> Float -> ( Float, Float )
-moveTowards pos dirTowards speed dt =
+moveTowards ( x, y ) dirTowards speed dt =
     let
         step =
             speed * dt
 
-        x =
-            (first pos) + (cos dirTowards) * step
-
-        y =
-            (second pos) + (sin dirTowards) * step
+        ( newX, newY ) =
+            ( x + (cos dirTowards) * step
+            , y + (sin dirTowards) * step
+            )
     in
-        ( x, y )
+        ( newX, newY )
 
 
 attract : Float -> Float -> Float -> ( Float, Float )
@@ -97,17 +70,11 @@ sumForces forces =
     List.foldr
         (\f1 f2 ->
             let
-                x1 =
-                    first f1
+                ( x1, y1 ) =
+                    f1
 
-                y1 =
-                    second f1
-
-                x2 =
-                    first f2
-
-                y2 =
-                    second f2
+                ( x2, y2 ) =
+                    f2
             in
                 ( x1 + x2, y1 + y2 )
         )
