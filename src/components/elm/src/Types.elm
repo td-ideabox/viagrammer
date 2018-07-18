@@ -63,8 +63,28 @@ type Mode
 ---- MODEL ----
 
 
-type alias Coord =
+type alias XCoord =
     Float
+
+
+type alias YCoord =
+    Float
+
+
+type alias Position =
+    ( XCoord, YCoord )
+
+
+type alias Width =
+    Inches
+
+
+type alias Height =
+    Inches
+
+
+type alias Diminsions =
+    ( Width, Height )
 
 
 type alias ViewBox =
@@ -90,6 +110,14 @@ initialViewBox =
     }
 
 
+type alias NodeIdx =
+    String
+
+
+type alias NodeColor =
+    String
+
+
 type alias NodeLabel =
     String
 
@@ -106,39 +134,30 @@ type alias NumPixels =
     Int
 
 
+type alias AnchorCoord =
+    Maybe Position
+
+
 type alias Node =
-    { idx : String
-    , color : String
-    , x : Float
-    , anchorCoord : Maybe ( Float, Float )
-    , y : Float
+    { idx : NodeIdx
+    , color : NodeColor
+    , position : Position
+    , anchorCoord : AnchorCoord
     , ignoreForces : Bool
-    , width : Inches
-    , height : Inches
-    , roundX : Int
-    , roundY : Int
+    , diminsions : Diminsions
     , label : NodeLabel
     }
 
 
-
--- We're initializing data with valid but incorrect data. Is
--- there a better pattern?
-
-
-initialNode : Node
-initialNode =
-    { idx = "unassigned"
-    , x = 0
-    , y = 0
-    , anchorCoord = Nothing
-    , ignoreForces = False
-    , label = ""
-    , color = "#f00"
-    , width = 1.25
-    , height = 1.0
-    , roundX = 15
-    , roundY = 15
+newNode : NodeIdx -> NodeColor -> Position -> AnchorCoord -> Bool -> Diminsions -> NodeLabel -> Node
+newNode nodeIdx nodeColor position anchorCoord ignoreForces diminsions nodeLabel =
+    { idx = nodeIdx
+    , color = nodeColor
+    , position = position
+    , anchorCoord = anchorCoord
+    , ignoreForces = ignoreForces
+    , diminsions = diminsions
+    , label = nodeLabel
     }
 
 

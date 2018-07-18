@@ -61,11 +61,17 @@ nodesToDot nodes =
 nodeStyling : Node -> NodeStyling
 nodeStyling node =
     let
+        width =
+            Tuple.first node.diminsions |> toString
+
+        height =
+            Tuple.second node.diminsions |> toString
+
         styleStr =
             [ ( "label", "\"" ++ node.label ++ "\"" )
             , ( "shape", "box" )
-            , ( "width", toString node.width )
-            , ( "height", toString node.height )
+            , ( "width", width )
+            , ( "height", height )
             ]
                 |> List.map (\it -> Tuple.first it ++ "=" ++ Tuple.second it)
                 |> String.join " "

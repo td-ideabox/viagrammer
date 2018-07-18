@@ -165,16 +165,20 @@ calcConnectPoints : Node -> List ( Float, Float )
 calcConnectPoints node =
     let
         x =
-            node.x
+            Tuple.first node.position
 
         y =
-            node.y
+            Tuple.second node.position
 
         width =
-            inchesToPixels node.width |> toFloat
+            Tuple.first node.diminsions
+                |> inchesToPixels
+                |> toFloat
 
         height =
-            inchesToPixels node.height |> toFloat
+            Tuple.second node.diminsions
+                |> inchesToPixels
+                |> toFloat
 
         halfWidth =
             width / 2.0
@@ -249,61 +253,54 @@ nodeToSvg : Node -> Svg msg
 nodeToSvg node =
     let
         xPos =
-            toString node.x
+            Tuple.first node.position
+                |> toString
 
         yPos =
-            toString node.y
+            Tuple.second node.position
+                |> toString
 
-        nWidth =
-            inchesToPixels node.width |> toString
+        nWidthInches =
+            Tuple.first node.diminsions
 
-        nHeight =
-            inchesToPixels node.height |> toString
+        nWidthPixels =
+            inchesToPixels nWidthInches
 
-        roundX =
-            toString node.roundX
+        nHeightInches =
+            Tuple.second node.diminsions
 
-        roundY =
-            toString node.roundY
+        nHeightPixels =
+            inchesToPixels nHeightInches
 
         idx =
             node.idx
 
         idxX =
-            toString (node.x + 10)
+            toString (Tuple.first node.position + 10)
 
         idxY =
-            toString (node.y + 15)
-
-        debugCoordX =
-            toString (node.x + 10)
-
-        debugCoordY =
-            toString (node.y + 60)
-
-        debugCoord =
-            toString (Basics.round node.x) ++ ", " ++ toString (round node.y)
+            toString (Tuple.second node.position + 15)
 
         labelX =
-            inchesToPixels node.width
-                |> toFloat
+            toFloat nWidthPixels
                 |> (*) 0.25
-                |> (+) node.x
+                |> (+) (Tuple.first node.position)
                 |> toString
 
         labelY =
-            inchesToPixels node.height
-                |> toFloat
+            toFloat nHeightPixels
                 |> (*) 0.5
-                |> (+) node.y
+                |> (+) (Tuple.second node.position)
                 |> toString
     in
         g []
             [ rect
                 [ x xPos
                 , y yPos
-                , width nWidth
-                , height nHeight
+                , toString nWidthPixels
+                    |> width
+                , toString nHeightPixels
+                    |> height
                 , fill "transparent"
                 , stroke "black"
                 ]

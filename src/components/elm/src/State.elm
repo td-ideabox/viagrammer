@@ -141,14 +141,10 @@ insertNode model =
         newY =
             (toFloat (model.windowSize.height) + yRand) / 2
 
-        newNode =
-            { initialNode
-                | x = newX
-                , y = newY
-                , idx = i
-            }
+        node =
+            newNode i "#000" ( newX, newY ) Nothing False ( 1.0, 1.0 ) ""
     in
-        incrementIdx { model | nodes = Dict.insert i newNode model.nodes }
+        incrementIdx { model | nodes = Dict.insert i node model.nodes }
 
 
 moveViewBox : ViewBox -> Float -> ViewBox
@@ -353,7 +349,7 @@ executeEditNodeCommand elementIdx model =
             Just n ->
                 Ok
                     { model
-                        | viewBox = focusViewBox ( n.x, n.y ) model.windowSize model.viewBox
+                        | viewBox = focusViewBox n.position model.windowSize model.viewBox
                         , currentCommand = ""
                         , mode = (EditNode n)
                     }
@@ -384,7 +380,7 @@ executeEditEdgeCommand elementIdx model =
                                     Just n2 ->
                                         let
                                             midPoint =
-                                                lineMidPoint ( n1.x, n1.y ) ( n2.x, n2.y )
+                                                lineMidPoint n1.position n2.position
                                         in
                                             Ok
                                                 { model
@@ -557,7 +553,7 @@ calcForcesOnNode node nodes edges =
                 Just anchor ->
                     let
                         p1 =
-                            ( node.x, node.y )
+                            node.position
 
                         p2 =
                             anchor
@@ -585,10 +581,10 @@ calcForcesOnNode node nodes edges =
                     (\n ->
                         let
                             p1 =
-                                ( node.x, node.y )
+                                node.position
 
                             p2 =
-                                ( n.x, n.y )
+                                n.position
 
                             dist =
                                 distance p1 p2
@@ -618,7 +614,7 @@ calcForcesOnNode node nodes edges =
                             p1 =
                                 case src of
                                     Just s ->
-                                        ( s.x, s.y )
+                                        s.position
 
                                     Nothing ->
                                         Debug.crash (e.src ++ " is not in the node map!")
@@ -629,7 +625,7 @@ calcForcesOnNode node nodes edges =
                             p2 =
                                 case dest of
                                     Just d ->
-                                        ( d.x, d.y )
+                                        d.position
 
                                     Nothing ->
                                         Debug.crash (e.dest ++ " is not in the node map")
@@ -661,10 +657,14 @@ calcNodeRepulseRadius : Node -> Float
 calcNodeRepulseRadius node =
     let
         halfWidth =
-            inchesToPixels node.width |> toFloat
+            Tuple.first node.diminsions
+                |> inchesToPixels
+                |> toFloat
 
         halfHeight =
-            inchesToPixels node.width |> toFloat
+            Tuple.second node.diminsions
+                |> inchesToPixels
+                |> toFloat
 
         hypot =
             (halfWidth ^ 2) + (halfHeight ^ 2) |> sqrt
@@ -689,6 +689,12 @@ applyPhysics dt nodes edges node =
 
         vy =
             second finalForce
+
+        x =
+            Tuple.first node.position
+
+        y =
+            Tuple.second node.position
     in
         --- Calculate force to apply based on distance and direction
-        { node | x = node.x + vx * dt, y = node.y + vy * dt }
+        { node | position = ( x + vx * dt, y + vy * dt ) }

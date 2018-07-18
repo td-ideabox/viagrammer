@@ -3,6 +3,18 @@ module Geometry exposing (..)
 import Tuple exposing (first, second)
 
 
+type alias XCoord =
+    Float
+
+
+type alias YCoord =
+    Float
+
+
+type alias Pos =
+    ( XCoord, YCoord )
+
+
 lineMidPoint : ( Float, Float ) -> ( Float, Float ) -> ( Float, Float )
 lineMidPoint src dest =
     let
