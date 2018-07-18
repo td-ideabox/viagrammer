@@ -9,6 +9,7 @@ import Svg.Styled.Attributes exposing (..)
 import Basics exposing (round)
 import Geometry exposing (..)
 import Physics exposing (distance)
+import ExportDot exposing (..)
 
 
 -- Functions which deal only with svg go here
@@ -170,10 +171,10 @@ calcConnectPoints node =
             node.y
 
         width =
-            toFloat node.width
+            inchesToPixels node.width |> toFloat
 
         height =
-            toFloat node.height
+            inchesToPixels node.height |> toFloat
 
         halfWidth =
             width / 2.0
@@ -254,10 +255,10 @@ nodeToSvg node =
             toString node.y
 
         nWidth =
-            toString node.width
+            inchesToPixels node.width |> toString
 
         nHeight =
-            toString node.height
+            inchesToPixels node.height |> toString
 
         roundX =
             toString node.roundX
@@ -280,21 +281,19 @@ nodeToSvg node =
         debugCoordY =
             toString (node.y + 60)
 
-        debugAnchor =
-            Maybe.map (\( x, y ) -> (toString x) ++ " -- " ++ (toString y)) node.anchorCoord
-                |> Maybe.withDefault ""
-
         debugCoord =
             toString (Basics.round node.x) ++ ", " ++ toString (round node.y)
 
         labelX =
-            toFloat node.width
+            inchesToPixels node.width
+                |> toFloat
                 |> (*) 0.25
                 |> (+) node.x
                 |> toString
 
         labelY =
-            toFloat node.height
+            inchesToPixels node.height
+                |> toFloat
                 |> (*) 0.5
                 |> (+) node.y
                 |> toString
@@ -305,13 +304,10 @@ nodeToSvg node =
                 , y yPos
                 , width nWidth
                 , height nHeight
-                , rx roundX
-                , ry roundY
                 , fill "transparent"
                 , stroke "black"
                 ]
                 []
             , text_ [ x idxX, y idxY ] [ Svg.Styled.text node.idx ]
-            , text_ [ x debugCoordX, y debugCoordY ] [ Svg.Styled.text debugAnchor ]
             , text_ [ x labelX, y labelY ] [ Svg.Styled.text node.label ]
             ]

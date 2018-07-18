@@ -1,6 +1,7 @@
-module ExportDot exposing (exportToDot)
+module ExportDot exposing (exportToDot, inchesToPixels)
 
 import Types exposing (..)
+
 
 exportToDot : List Node -> List Edge -> String
 exportToDot nodes edges =
@@ -43,18 +44,39 @@ nodesToDot : List Node -> String
 nodesToDot nodes =
     List.map
         (\node ->
-            let
-                label =
-                    node.label
-            in
-                case label of
-                    "" ->
-                        String.concat [ node.idx ]
-
-                    _ ->
-                        String.concat [ node.idx, "[label=\"", node.label, "\"]" ]
+            String.concat [ node.idx, nodeStyling node ]
         )
         nodes
         |> List.map (\str -> "\t" ++ str)
         |> String.join "\n"
 
+
+
+{- Given a node, craft a graphviz styling string
+   The goal being to get the website styling and the graphviz styling as
+   close together as possible, ensuring the graph produced looks nice.
+-}
+
+
+nodeStyling : Node -> NodeStyling
+nodeStyling node =
+    let
+        styleStr =
+            [ ( "label", "\"" ++ node.label ++ "\"" )
+            , ( "shape", "box" )
+            , ( "width", toString node.width )
+            , ( "height", toString node.height )
+            ]
+                |> List.map (\it -> Tuple.first it ++ "=" ++ Tuple.second it)
+                |> String.join " "
+    in
+        "[" ++ styleStr ++ "]"
+
+
+
+--"[label=\"" ++ node.label ++ "\" shape=box]"
+
+
+inchesToPixels : Inches -> NumPixels
+inchesToPixels inches =
+    inches * 96.0 |> floor

@@ -18,6 +18,7 @@ import Result exposing (..)
 import Ports exposing (..)
 import Json.Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
+import ExportDot exposing (..)
 
 
 init : ( Model, Cmd Msg )
@@ -694,60 +695,3 @@ applyPhysics dt nodes edges node =
     in
         --- Calculate force to apply based on distance and direction
         { node | x = node.x + vx * dt, y = node.y + vy * dt }
-
-
-exportToDot : List Node -> List Edge -> String
-exportToDot nodes edges =
-    let
-        nodeStr =
-            nodesToDot nodes
-
-        edgeStr =
-            edgesToDot edges
-
-        content =
-            String.join "\n" [ nodeStr, edgeStr ]
-
-        dot =
-            String.concat [ "digraph SomeGraph ", "{\n", content, "\n}" ]
-    in
-        dot
-
-
-edgesToDot : List Edge -> String
-edgesToDot edges =
-    List.map
-        (\edge ->
-            case edge.label of
-                "" ->
-                    { edge | label = edge.key }
-
-                _ ->
-                    edge
-        )
-        edges
-        |> List.map
-            (\edge ->
-                String.concat [ "\t", edge.src, "->", edge.dest, "[label=\"", edge.label, "\"]" ]
-            )
-        |> String.join "\n"
-
-
-nodesToDot : List Node -> String
-nodesToDot nodes =
-    List.map
-        (\node ->
-            let
-                label =
-                    node.label
-            in
-                case label of
-                    "" ->
-                        String.concat [ node.idx ]
-
-                    _ ->
-                        String.concat [ node.idx, "[label=\"", node.label, "\"]" ]
-        )
-        nodes
-        |> List.map (\str -> "\t" ++ str)
-        |> String.join "\n"

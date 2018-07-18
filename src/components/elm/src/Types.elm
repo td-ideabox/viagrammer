@@ -90,6 +90,22 @@ initialViewBox =
     }
 
 
+type alias NodeLabel =
+    String
+
+
+type alias NodeStyling =
+    String
+
+
+type alias Inches =
+    Float
+
+
+type alias NumPixels =
+    Int
+
+
 type alias Node =
     { idx : String
     , color : String
@@ -97,11 +113,11 @@ type alias Node =
     , anchorCoord : Maybe ( Float, Float )
     , y : Float
     , ignoreForces : Bool
-    , width : Int
-    , height : Int
+    , width : Inches
+    , height : Inches
     , roundX : Int
     , roundY : Int
-    , label : String
+    , label : NodeLabel
     }
 
 
@@ -119,8 +135,8 @@ initialNode =
     , ignoreForces = False
     , label = ""
     , color = "#f00"
-    , width = 80
-    , height = 80
+    , width = 0.5
+    , height = 0.5
     , roundX = 15
     , roundY = 15
     }

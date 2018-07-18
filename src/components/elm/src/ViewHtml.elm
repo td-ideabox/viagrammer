@@ -10,7 +10,8 @@ import Types exposing (..)
 import Dict exposing (..)
 import Physics exposing (distance)
 import Http exposing (..)
-import State exposing (exportToDot)
+import ExportDot exposing (exportToDot)
+
 
 -- Functions which deal only in Html go here.
 
@@ -63,7 +64,10 @@ editElementView currentViewBox elementLabel onInputCallback =
                 ]
             ]
 
+
+
 -- Export
+
 
 downloadExportButton : Model -> Html Msg
 downloadExportButton model =
@@ -81,7 +85,6 @@ downloadExportButton model =
             []
             [ type_ "button", href <| "data:text/plain;charset=utf-8," ++ encodeUri dot, downloadAs "graph.dot" ]
             [ styled button [] [] [ text "Download" ] ]
-
 
 
 
