@@ -135,8 +135,8 @@ initialNode =
     , ignoreForces = False
     , label = ""
     , color = "#f00"
-    , width = 0.5
-    , height = 0.5
+    , width = 1.25
+    , height = 1.0
     , roundX = 15
     , roundY = 15
     }

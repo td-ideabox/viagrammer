@@ -618,7 +618,7 @@ calcForcesOnNode node nodes edges =
                                 direction p1 p2
 
                             minRadius =
-                                100
+                                calcNodeRepulseRadius node
                         in
                             --- Don't apply a force to yourself or if you outside the
                             --- affected radius
@@ -676,6 +676,24 @@ calcForcesOnNode node nodes edges =
 
             Nothing ->
                 List.append nodeRepulses edgeAttractions
+
+
+calcNodeRepulseRadius : Node -> Float
+calcNodeRepulseRadius node =
+    let
+        halfWidth =
+            inchesToPixels node.width |> toFloat
+
+        halfHeight =
+            inchesToPixels node.width |> toFloat
+
+        hypot =
+            (halfWidth ^ 2) + (halfHeight ^ 2) |> sqrt
+
+        buffer =
+            5.0
+    in
+        hypot + buffer
 
 
 applyPhysics : Float -> Dict String Node -> Dict String Edge -> Node -> Node
