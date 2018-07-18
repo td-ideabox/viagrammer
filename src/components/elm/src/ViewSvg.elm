@@ -252,34 +252,20 @@ findClosestNeighborPoints srcPoints destPoints =
 nodeToSvg : Node -> Svg msg
 nodeToSvg node =
     let
-        xPos =
-            Tuple.first node.position
-                |> toString
+        ( xPos, yPos ) =
+            node.position
 
-        yPos =
-            Tuple.second node.position
-                |> toString
+        ( xStr, yStr ) =
+            ( toString xPos, toString yPos )
 
-        nWidthInches =
-            Tuple.first node.diminsions
+        ( nWidthInches, nHeightInches ) =
+            node.diminsions
 
-        nWidthPixels =
-            inchesToPixels nWidthInches
+        ( nWidthPixels, nHeightPixels ) =
+            ( inchesToPixels nWidthInches, inchesToPixels nHeightInches )
 
-        nHeightInches =
-            Tuple.second node.diminsions
-
-        nHeightPixels =
-            inchesToPixels nHeightInches
-
-        idx =
-            node.idx
-
-        idxX =
-            toString (Tuple.first node.position + 10)
-
-        idxY =
-            toString (Tuple.second node.position + 15)
+        ( idxX, idxY ) =
+            ( xPos + 10 |> toString, yPos + 15 |> toString )
 
         labelX =
             toFloat nWidthPixels
@@ -295,8 +281,8 @@ nodeToSvg node =
     in
         g []
             [ rect
-                [ x xPos
-                , y yPos
+                [ x xStr
+                , y yStr
                 , toString nWidthPixels
                     |> width
                 , toString nHeightPixels
