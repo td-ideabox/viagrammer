@@ -220,18 +220,8 @@ findClosestNeighborPoints srcPoints destPoints =
 
         closestPair =
             List.map
-                (\p ->
-                    let
-                        coord1 =
-                            first p
-
-                        coord2 =
-                            second p
-
-                        dist =
-                            Physics.distance coord1 coord2
-                    in
-                        ( dist, ( coord1, coord2 ) )
+                (\( coord1, coord2 ) ->
+                    ( Physics.distance coord1 coord2, ( coord1, coord2 ) )
                 )
                 allPairs
                 |> List.sortBy (\x -> first x)
