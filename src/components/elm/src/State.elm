@@ -126,20 +126,22 @@ insertNode model =
         maxOffset =
             200
 
-        xRand =
-            (first model.rng) % maxOffset |> toFloat
+        ( xRng, yRng ) =
+            model.rng
 
-        yRand =
-            (second model.rng) % maxOffset |> toFloat
+        ( xRand, yRand ) =
+            ( xRng % maxOffset |> toFloat, yRng % maxOffset |> toFloat )
 
         i =
             buildIdx model.indexCounter model.indexAlphabet
 
-        newX =
-            (toFloat (model.windowSize.width) + xRand) / 2
+        ( width, height ) =
+            ( model.windowSize.width, model.windowSize.height )
 
-        newY =
-            (toFloat (model.windowSize.height) + yRand) / 2
+        ( newX, newY ) =
+            ( (toFloat (width) + xRand) / 2
+            , (toFloat (height) + yRand) / 2
+            )
 
         node =
             newNode i "#000" ( newX, newY ) Nothing False ( 1.0, 1.0 ) ""
@@ -171,11 +173,8 @@ moveViewBox currentViewBox dt =
         newPos =
             moveTowards curPos dir speed dt
 
-        newX =
-            first newPos
-
-        newY =
-            second newPos
+        ( newX, newY ) =
+            newPos
     in
         if dist > moveIfFartherThan then
             { currentViewBox | x = newX, y = newY }
@@ -259,17 +258,13 @@ executeNormalCommand model =
 executeInsertEdgeCommand : ( String, String ) -> Dict String Node -> Dict String Edge -> Result Error Edge
 executeInsertEdgeCommand srcDestIdx nodes edges =
     let
-        srcIdx =
-            first srcDestIdx
+        ( srcIdx, destIdx ) =
+            srcDestIdx
 
-        destIdx =
-            second srcDestIdx
-
-        srcNode =
-            findNodeByIdx nodes srcIdx
-
-        destNode =
-            findNodeByIdx nodes destIdx
+        ( srcNode, destNode ) =
+            ( Dict.get srcIdx nodes
+            , Dict.get destIdx nodes
+            )
 
         key =
             srcIdx ++ "t" ++ destIdx
@@ -476,30 +471,15 @@ focusViewBox coordPoint windowSize viewBox =
 getPointToFocusViewBox : ( Float, Float ) -> Window.Size -> ( Float, Float )
 getPointToFocusViewBox coordPoint windowSize =
     let
-        x =
-            first coordPoint
+        ( x, y ) =
+            coordPoint
 
-        y =
-            second coordPoint
-
-        width =
-            windowSize.width |> toFloat
-
-        height =
-            windowSize.height |> toFloat
-
-        viewX =
-            x - (width * 0.5)
-
-        viewY =
-            y - (height * 0.5)
+        ( halfWindowWidth, halfWindowHeight ) =
+            ( windowSize.width |> toFloat |> (*) 0.5
+            , windowSize.height |> toFloat |> (*) 0.5
+            )
     in
-        ( viewX, viewY )
-
-
-findNodeByIdx : Dict String Node -> String -> Maybe Node
-findNodeByIdx nodes idx =
-    Dict.get idx nodes
+        ( x - halfWindowWidth, y - halfWindowHeight )
 
 
 buildIdx : Int -> Array String -> String
@@ -684,17 +664,11 @@ applyPhysics dt nodes edges node =
         finalForce =
             sumForces forcesOnNode
 
-        vx =
-            first finalForce
+        ( x, y ) =
+            node.position
 
-        vy =
-            second finalForce
-
-        x =
-            Tuple.first node.position
-
-        y =
-            Tuple.second node.position
+        ( vx, vy ) =
+            finalForce
     in
         --- Calculate force to apply based on distance and direction
         { node | position = ( x + vx * dt, y + vy * dt ) }
