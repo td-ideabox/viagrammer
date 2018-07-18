@@ -15,7 +15,7 @@ import Rng exposing (next)
 import Types exposing (..)
 import Geometry exposing (..)
 import Result exposing (..)
-import Ports exposing (..)
+import GraphViz exposing (..)
 import Json.Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
 import ExportDot exposing (..)
@@ -39,27 +39,6 @@ subscriptions model =
         , Window.resizes WindowSize
         , layoutData UpdateLayout
         ]
-
-
-edgeDecoder : Decoder EdgeData
-edgeDecoder =
-    decode EdgeData
-        |> required "tail" int
-        |> required "head" int
-
-
-objectDecoder : Decoder ObjectData
-objectDecoder =
-    decode ObjectData
-        |> required "name" string
-        |> required "pos" string
-
-
-graphDecoder : Decoder GraphData
-graphDecoder =
-    decode GraphData
-        |> optional "edges" (list edgeDecoder) []
-        |> optional "objects" (list objectDecoder) []
 
 
 
