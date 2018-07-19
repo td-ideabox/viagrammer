@@ -200,24 +200,44 @@ type ArrowHead
     = Pointed
 
 
+type alias EdgeKey =
+    String
+
+
+type alias EdgeColor =
+    String
+
+
+type alias EdgeLabel =
+    String
+
+
+type alias EdgeSrc =
+    String
+
+
+type alias EdgeDest =
+    String
+
+
 type alias Edge =
-    { key : String
-    , color : String
-    , label : String
-    , src : String
-    , dest : String
+    { key : EdgeKey
+    , color : EdgeColor
+    , label : EdgeLabel
+    , src : EdgeSrc
+    , dest : EdgeDest
     , arrowHead : ArrowHead
     }
 
 
-initialEdge : Edge
-initialEdge =
-    { key = "unassigned edge"
-    , color = "#0f0"
-    , label = ""
-    , src = ""
-    , dest = ""
-    , arrowHead = Pointed
+newEdge : EdgeKey -> EdgeColor -> EdgeLabel -> EdgeSrc -> EdgeDest -> ArrowHead -> Edge
+newEdge edgeKey edgeColor edgeLabel edgeSrc edgeDest arrowHead =
+    { key = edgeKey
+    , color = edgeColor
+    , label = edgeLabel
+    , src = edgeSrc
+    , dest = edgeDest
+    , arrowHead = arrowHead
     }
 
 

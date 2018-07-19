@@ -327,25 +327,16 @@ executeInsertEdgeCommand srcDestIdx nodes edges =
             Just src ->
                 case destNode of
                     Just dest ->
-                        let
-                            isSameNode =
-                                src.idx == dest.idx
+                        case Dict.get key model.edges of
+                            Just e ->
+                                Ok e
 
-                            edgeAlreadyExists =
-                                Dict.get key model.edges
-
-                            newEdge =
-                                { initialEdge | src = src.idx, dest = dest.idx, key = key }
-                        in
-                            case edgeAlreadyExists of
-                                Just e ->
-                                    Ok e
-
-                                Nothing ->
-                                    if (isSameNode) then
-                                        Err "Cannot create edge to same node currently"
-                                    else
-                                        Ok newEdge
+                            Nothing ->
+                                if src.idx == dest.idx then
+                                    Err "Cannot create edge to same node currently"
+                                else
+                                    newEdge key "#0f0" "" src.idx dest.idx Pointed
+                                        |> Ok
 
                     Nothing ->
                         Err "destination node doesn't exist"
