@@ -44,7 +44,7 @@ nodesToDot : List Node -> String
 nodesToDot nodes =
     List.map
         (\node ->
-            String.concat [ node.idx, nodeStyling node ]
+            String.concat [ node.idx, nodeStyling node.label node.diminsions ]
         )
         nodes
         |> List.map (\str -> "\t" ++ str)
@@ -58,22 +58,19 @@ nodesToDot nodes =
 -}
 
 
-nodeStyling : Node -> NodeStyling
-nodeStyling node =
+nodeStyling : NodeLabel -> Diminsions -> NodeStyling
+nodeStyling label ( width, height ) =
     let
-        width =
-            Tuple.first node.diminsions |> toString
-
-        height =
-            Tuple.second node.diminsions |> toString
+        ( widthStr, heightStr ) =
+            ( toString width, toString height )
 
         styleStr =
-            [ ( "label", "\"" ++ node.label ++ "\"" )
+            [ ( "label", "\"" ++ label ++ "\"" )
             , ( "shape", "box" )
-            , ( "width", width )
-            , ( "height", height )
+            , ( "width", widthStr )
+            , ( "height", heightStr )
             ]
-                |> List.map (\it -> Tuple.first it ++ "=" ++ Tuple.second it)
+                |> List.map (\( attribute, value ) -> attribute ++ "=" ++ value)
                 |> String.join " "
     in
         "[" ++ styleStr ++ "]"
