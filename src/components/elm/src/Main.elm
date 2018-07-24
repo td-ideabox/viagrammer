@@ -135,7 +135,7 @@ applyKey scale keyCode model =
     in
         case model.mode of
             Normal ->
-                case getKey keyCode of
+                case key of
                     Ilwr ->
                         let
                             nodes =

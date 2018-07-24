@@ -68,15 +68,8 @@ attract dist dirTowards radius =
 sumForces : List ( Float, Float ) -> ( Float, Float )
 sumForces forces =
     List.foldr
-        (\f1 f2 ->
-            let
-                ( x1, y1 ) =
-                    f1
-
-                ( x2, y2 ) =
-                    f2
-            in
-                ( x1 + x2, y1 + y2 )
+        (\( x1, y1 ) ( x2, y2 ) ->
+            ( x1 + x2, y1 + y2 )
         )
         ( 0, 0 )
         forces
