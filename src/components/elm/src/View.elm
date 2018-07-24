@@ -24,7 +24,6 @@ import ViewHtml exposing (..)
 -- Root View
 
 
-view : Model -> Html Msg
 view model =
     case model.mode of
         Normal ->

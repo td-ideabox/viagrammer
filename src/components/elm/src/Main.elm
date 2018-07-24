@@ -29,7 +29,6 @@ import Json.Decode.Pipeline exposing (..)
 import ExportDot exposing (..)
 
 
-main : Program Never Model Msg
 main =
     Html.program
         { view = View.view >> Html.Styled.toUnstyled
@@ -39,7 +38,6 @@ main =
         }
 
 
-init : ( Model, Cmd Msg )
 init =
     ( model, Window.size |> Task.perform WindowSize )
 
@@ -48,7 +46,6 @@ init =
 ---- SUBSCRIPTIONS -----
 
 
-subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ Keyboard.downs KeyDown
@@ -63,7 +60,6 @@ subscriptions model =
 ---- UPDATE ----
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Frame dt ->
@@ -127,7 +123,6 @@ update msg model =
 {- Handle user input -}
 
 
-applyKey : Int -> Keyboard.KeyCode -> Model -> ( Model, Cmd Msg )
 applyKey scale keyCode model =
     let
         key =
@@ -172,7 +167,6 @@ applyKey scale keyCode model =
                         ( model, Cmd.none )
 
 
-insertNode : Model -> Model
 insertNode model =
     let
         --- Need to fix issue where nodes fly off if they have
@@ -203,7 +197,6 @@ insertNode model =
         { model | indexCounter = model.indexCounter + 1, nodes = Dict.insert i node model.nodes }
 
 
-moveViewBox : ViewBox -> Float -> ViewBox
 moveViewBox currentViewBox dt =
     let
         curPos =
@@ -240,7 +233,6 @@ moveViewBox currentViewBox dt =
 --- Vim-esque command processeing
 
 
-executeNormalCommand : Model -> Model
 executeNormalCommand model =
     let
         isEditCommand =
@@ -309,7 +301,6 @@ executeNormalCommand model =
                         { model | errMsg = msg, currentCommand = "" }
 
 
-executeInsertEdgeCommand : ( String, String ) -> Dict String Node -> Dict String Edge -> Result Error Edge
 executeInsertEdgeCommand srcDestIdx nodes edges =
     let
         ( srcIdx, destIdx ) =
@@ -345,7 +336,6 @@ executeInsertEdgeCommand srcDestIdx nodes edges =
                 Err "source node doesn't exist"
 
 
-executeRemoveCommand : Model -> Model
 executeRemoveCommand model =
     let
         removeElementIdx =
@@ -360,7 +350,6 @@ executeRemoveCommand model =
         { model | nodes = updatedNodes, edges = updatedEdges, currentCommand = "" }
 
 
-executeEditCommand : Model -> Result Error Model
 executeEditCommand model =
     let
         --- Are we creating an edge?
@@ -379,7 +368,6 @@ executeEditCommand model =
             executeEditNodeCommand editElementIdx model
 
 
-executeEditNodeCommand : String -> Model -> Result Error Model
 executeEditNodeCommand elementIdx model =
     let
         targetNode =
@@ -398,7 +386,6 @@ executeEditNodeCommand elementIdx model =
                 Err "Couldn't find node when labeling"
 
 
-executeEditEdgeCommand : String -> Model -> Result Error Model
 executeEditEdgeCommand elementIdx model =
     case Dict.get elementIdx model.edges of
         Just edge ->
@@ -427,7 +414,6 @@ executeEditEdgeCommand elementIdx model =
             Err ("Edge " ++ elementIdx ++ " doesn't appear to exist")
 
 
-buildCommand : Keyboard.KeyCode -> Model -> Model
 buildCommand keyCode model =
     let
         c =
@@ -439,24 +425,20 @@ buildCommand keyCode model =
             model
 
 
-setViewBoxFocus : ViewBox -> ( Float, Float ) -> ViewBox
 setViewBoxFocus viewBox ( x, y ) =
     { viewBox | focusX = x, focusY = y }
 
 
-setViewBoxOrigin : ViewBox -> ViewBox
 setViewBoxOrigin viewBox =
     { viewBox | originX = viewBox.x, originY = viewBox.y }
 
 
-focusViewBox : ( Float, Float ) -> Window.Size -> ViewBox -> ViewBox
 focusViewBox coordPoint windowSize viewBox =
     getPointToFocusViewBox coordPoint windowSize
         |> setViewBoxFocus viewBox
         |> setViewBoxOrigin
 
 
-getPointToFocusViewBox : ( Float, Float ) -> Window.Size -> ( Float, Float )
 getPointToFocusViewBox coordPoint windowSize =
     let
         ( x, y ) =
@@ -470,7 +452,6 @@ getPointToFocusViewBox coordPoint windowSize =
         ( x - halfWindowWidth, y - halfWindowHeight )
 
 
-buildIdx : Int -> Array String -> String
 buildIdx numNodes alphabet =
     let
         alphaLength =
@@ -500,7 +481,6 @@ buildIdx numNodes alphabet =
                     val ++ buildIdx (numNodes - alphaLength) alphabet
 
 
-updateNodes : Float -> Dict String Node -> Dict String Edge -> Dict String Node
 updateNodes dt nodes edges =
     Dict.map
         (\k v ->
@@ -515,7 +495,6 @@ updateNodes dt nodes edges =
 -}
 
 
-applyPhysics : Float -> Dict String Node -> Dict String Edge -> Node -> Node
 applyPhysics dt nodes edges node =
     let
         forcesOnNode =
@@ -534,7 +513,6 @@ applyPhysics dt nodes edges node =
         { node | position = ( x + vx * dt, y + vy * dt ) }
 
 
-calcForcesOnNode : Node -> Dict String Node -> Dict String Edge -> List ( Float, Float )
 calcForcesOnNode node nodes edges =
     let
         anchorAttraction =
@@ -556,7 +534,6 @@ calcForcesOnNode node nodes edges =
                 List.append nodeRepulses edgeAttractions
 
 
-calcAnchorAttractions : Node -> ( Float, Float )
 calcAnchorAttractions node =
     case node.anchorCoord of
         Just anchor ->
@@ -585,7 +562,6 @@ calcAnchorAttractions node =
             ( 0, 0 )
 
 
-calcNodeRepulsions : Node -> List Node -> List ( Float, Float )
 calcNodeRepulsions node nodes =
     List.map
         (\n ->
@@ -615,7 +591,6 @@ calcNodeRepulsions node nodes =
         nodes
 
 
-calcEdgeAttractions : Node -> Dict String Node -> List Edge -> List ( Float, Float )
 calcEdgeAttractions node nodes edgeList =
     List.map
         (\e ->
@@ -659,7 +634,6 @@ calcEdgeAttractions node nodes edgeList =
         edgeList
 
 
-calcNodeRepulseRadius : Node -> Float
 calcNodeRepulseRadius node =
     let
         ( widthInches, heightInches ) =

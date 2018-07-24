@@ -16,17 +16,14 @@ import ExportDot exposing (exportToDot)
 -- Functions which deal only in Html go here.
 
 
-editNodeView : ViewBox -> Node -> Html Msg
 editNodeView currentViewBox node =
     editElementView currentViewBox node.label (EditNodeMsg node)
 
 
-editEdgeView : ViewBox -> Edge -> Html Msg
 editEdgeView currentViewBox edge =
     editElementView currentViewBox edge.label (EditEdgeMsg edge)
 
 
-editElementView : ViewBox -> String -> (String -> Msg) -> Html Msg
 editElementView currentViewBox elementLabel onInputCallback =
     let
         curPos =
@@ -69,7 +66,6 @@ editElementView currentViewBox elementLabel onInputCallback =
 -- Export
 
 
-downloadExportButton : Model -> Html Msg
 downloadExportButton model =
     let
         nodes =
@@ -91,12 +87,10 @@ downloadExportButton model =
 --Debug Views
 
 
-debugCommand : List (Attribute msg) -> List (Html msg) -> Html msg
 debugCommand =
     Html.Styled.styled div [ position absolute, Css.left (Css.pct 50), Css.fontWeight Css.bold ]
 
 
-debugFocus : List (Attribute msg) -> List (Html msg) -> Html msg
 debugFocus =
     Html.Styled.styled div
         [ position absolute

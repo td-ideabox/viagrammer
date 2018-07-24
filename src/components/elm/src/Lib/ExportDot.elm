@@ -3,7 +3,6 @@ module ExportDot exposing (exportToDot, inchesToPixels)
 import Types exposing (..)
 
 
-exportToDot : List Node -> List Edge -> String
 exportToDot nodes edges =
     let
         nodeStr =
@@ -21,7 +20,6 @@ exportToDot nodes edges =
         dot
 
 
-edgesToDot : List Edge -> String
 edgesToDot edges =
     List.map
         (\edge ->
@@ -40,7 +38,6 @@ edgesToDot edges =
         |> String.join "\n"
 
 
-nodesToDot : List Node -> String
 nodesToDot nodes =
     List.map
         (\node ->
@@ -58,7 +55,6 @@ nodesToDot nodes =
 -}
 
 
-nodeStyling : NodeLabel -> Diminsions -> NodeStyling
 nodeStyling label ( width, height ) =
     let
         ( widthStr, heightStr ) =
@@ -80,6 +76,5 @@ nodeStyling label ( width, height ) =
 --"[label=\"" ++ node.label ++ "\" shape=box]"
 
 
-inchesToPixels : Inches -> NumPixels
 inchesToPixels inches =
     inches * 96.0 |> floor

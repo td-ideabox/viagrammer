@@ -16,7 +16,6 @@ import ExportDot exposing (..)
 -- Edge Views
 
 
-svgCanvas : Model -> Svg msg
 svgCanvas model =
     let
         ( winWidth, winHeight ) =
@@ -52,7 +51,6 @@ svgCanvas model =
         svg [ width viewWidth, height viewHeight, viewBox viewBoxAttr ] elements
 
 
-markerSvg : String -> String -> Svg msg
 markerSvg startId endId =
     defs
         []
@@ -65,7 +63,6 @@ markerSvg startId endId =
         ]
 
 
-edgeToSvg : Edge -> Dict String Node -> Svg msg
 edgeToSvg edge nodes =
     let
         src =
@@ -139,7 +136,6 @@ edgeToSvg edge nodes =
                 Debug.crash "Cant render edge svg cause src node is missing"
 
 
-calcConnectPoints : Node -> List ( Float, Float )
 calcConnectPoints node =
     let
         ( x, y ) =
@@ -186,7 +182,6 @@ calcConnectPoints node =
 -}
 
 
-findClosestNeighborPoints : List ( Float, Float ) -> List ( Float, Float ) -> ( ( Float, Float ), ( Float, Float ) )
 findClosestNeighborPoints srcPoints destPoints =
     let
         allPairs =
@@ -213,7 +208,6 @@ findClosestNeighborPoints srcPoints destPoints =
 -- Node Views
 
 
-nodeToSvg : Node -> Svg msg
 nodeToSvg node =
     let
         ( xPos, yPos ) =

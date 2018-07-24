@@ -7,17 +7,14 @@ import Tuple exposing (first, second)
 --- Physics calculating functions
 
 
-distance : ( Float, Float ) -> ( Float, Float ) -> Float
 distance ( x1, y1 ) ( x2, y2 ) =
     sqrt ((x2 - x1) ^ 2 + (y2 - y1) ^ 2)
 
 
-direction : ( Float, Float ) -> ( Float, Float ) -> Float
 direction ( x1, y1 ) ( x2, y2 ) =
     atan2 (y2 - y1) (x2 - x1)
 
 
-repulse : Float -> Float -> Float -> ( Float, Float )
 repulse dist dirTowards radius =
     let
         --- The closer we get the stronger the force.
@@ -36,7 +33,6 @@ repulse dist dirTowards radius =
         ( x, y )
 
 
-moveTowards : ( Float, Float ) -> Float -> Float -> Float -> ( Float, Float )
 moveTowards ( x, y ) dirTowards speed dt =
     let
         step =
@@ -50,7 +46,6 @@ moveTowards ( x, y ) dirTowards speed dt =
         ( newX, newY )
 
 
-attract : Float -> Float -> Float -> ( Float, Float )
 attract dist dirTowards radius =
     let
         f =
@@ -65,7 +60,6 @@ attract dist dirTowards radius =
         ( x, y )
 
 
-sumForces : List ( Float, Float ) -> ( Float, Float )
 sumForces forces =
     List.foldr
         (\f1 f2 ->
@@ -82,7 +76,6 @@ sumForces forces =
         forces
 
 
-percentTowardsDest : ( Float, Float ) -> ( Float, Float ) -> ( Float, Float ) -> Float
 percentTowardsDest originPos currentPos destPos =
     let
         distToDest =
