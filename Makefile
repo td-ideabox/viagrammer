@@ -5,10 +5,10 @@ setup: client-setup server-setup
 build: client-build server-build
 
 client-setup:
-	(cd front ; yarn install)
+	(cd client ; yarn install)
 
 client-build:
-	(cd front ; make)
+	(cd client ; make)
 
 server-setup:
 	stack setup
