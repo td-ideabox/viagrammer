@@ -1,0 +1,8 @@
+resolver: lts-8.21
+
+packages:
+  - location: ./.
+  - location:
+      git: https://www.github.com/soenkehahn/wai-make-assets
+      commit: c72a924
+    extra-dep: true
